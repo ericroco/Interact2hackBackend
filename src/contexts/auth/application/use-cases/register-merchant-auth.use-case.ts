@@ -33,8 +33,9 @@ export class RegisterMerchantAuthUseCase {
       ownerEmail: dto.ownerEmail,
       passwordHash,
       averageTicket: 0,
-      couponFundingBalance: 0,
+      couponFundingBalance: 5, // crédito inicial Deuna: $5 en cupones de adquisición
       isActive: true,
+      loyaltyEnabled: false,
     });
 
     const accessToken = this.jwtService.sign({

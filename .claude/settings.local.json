@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk -F',' '{print $3}')",
+      "Bash(awk -F',' '{print $2\",\"$3\",\"$8\",\"$13}')",
+      "Bash(npx tsc *)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(awk -F',' '{print $11}' \"C:/Users/StarMedia/Desktop/Interact2hackBackend/datasets1/fact_transactions.csv\")",
+      "Bash(awk -F',' '{print $12}' \"C:/Users/StarMedia/Desktop/Interact2hackBackend/datasets1/fact_transactions.csv\")",
+      "Bash(awk -F',' '$13==\"Disponible\" {print $2\",\"$3\",\"$8}' \"C:/Users/StarMedia/Desktop/Interact2hackBackend/datasets1/fact_transactions.csv\")",
+      "Bash(awk -F',' 'NR>1 {print $4\",\"$1\",\"$2\",\"$7}' \"C:/Users/StarMedia/Desktop/Interact2hackBackend/datasets1/dim_users.csv\")",
+      "Bash(sort -t',' -k1 -n)",
+      "Bash(awk -F',' 'NR>1 && $4>=2 {print $4\",\"$1\",\"$2}' \"C:/Users/StarMedia/Desktop/Interact2hackBackend/datasets1/dim_users.csv\")",
+      "Bash(sort -t',' -k1 -rn)",
+      "Bash(awk -F',' '$11==\"Detectado\" {print $2\",\"$3\",\"$5\",\"$4}' \"C:/Users/StarMedia/Desktop/Interact2hackBackend/datasets1/fact_transactions.csv\")"
+    ]
+  }
+}

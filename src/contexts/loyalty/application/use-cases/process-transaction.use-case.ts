@@ -46,6 +46,7 @@ export class ProcessTransactionUseCase {
   async execute(userId: string, dto: ScanTransactionDto): Promise<TransactionResultDto> {
     const merchant = await this.merchantRepo.findById(dto.merchantId);
     if (!merchant) throw new NotFoundException('Merchant not found');
+    if (!merchant.loyaltyEnabled) throw new UnprocessableEntityException('Loyalty program not enabled for this merchant');
 
     const category = await this.categoryRepo.findById(merchant.categoryId);
     if (!category) throw new UnprocessableEntityException('Merchant category not configured');
@@ -70,7 +71,7 @@ export class ProcessTransactionUseCase {
     const avgTicketSnapshot = Number(merchant.averageTicket);
     const trustPointsEarned = isBlocked
       ? 0
-      : this.effortEngine.calculate(dto.amount, avgTicketSnapshot);
+      : this.effortEngine.calculate(dto.amount, avgTicketSnapshot, loyaltyTier.tierLevel);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -161,11 +162,7 @@ export class ProcessTransactionUseCase {
         const noActiveCoupon = !activeCoupon || !hasActiveAfterRedemption;
 
         if (thresholdReached && noActiveCoupon) {
-          const couponValue = this.couponCalc.calculate(
-            newAvgTicket,
-            Number(tierConfig!.cashbackPct),
-            Number(category.subsidyCapPct),
-          );
+          const couponValue = this.couponCalc.calculate(newAvgTicket, currentTierLevel);
 
           const expiresAt = new Date();
           expiresAt.setDate(expiresAt.getDate() + COUPON_EXPIRY_DAYS);

@@ -12,6 +12,8 @@ import { MERCHANT_CATEGORY_REPOSITORY } from '@contexts/loyalty/domain/ports/mer
 import { MerchantController } from './infrastructure/adapters/merchant.controller';
 import { GetMerchantStatsUseCase } from './application/use-cases/get-merchant-stats.use-case';
 import { CreateAcquisitionCouponUseCase } from './application/use-cases/create-acquisition-coupon.use-case';
+import { TopUpMerchantFundUseCase } from './application/use-cases/top-up-merchant-fund.use-case';
+import { ToggleLoyaltyUseCase } from './application/use-cases/toggle-loyalty.use-case';
 import { AuthModule } from '@contexts/auth/auth.module';
 
 @Module({
@@ -25,6 +27,8 @@ import { AuthModule } from '@contexts/auth/auth.module';
     { provide: MERCHANT_CATEGORY_REPOSITORY, useClass: MerchantCategoryTypeOrmRepository },
     GetMerchantStatsUseCase,
     CreateAcquisitionCouponUseCase,
+    TopUpMerchantFundUseCase,
+    ToggleLoyaltyUseCase,
   ],
   controllers: [MerchantController],
   exports: [MERCHANT_REPOSITORY, ACQUISITION_COUPON_REPOSITORY, MERCHANT_CATEGORY_REPOSITORY],

@@ -3,7 +3,7 @@ import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 
 /**
  * Cupones de adquisición emitidos por comerciantes para atraer clientes nuevos.
  * Financiados 100% por el comerciante (deduce de merchant.couponFundingBalance).
- * Regla dura de dominio: minimumTicket = value * 4
+ * El comerciante define el valor y la compra mínima requerida.
  *
  * Distintos a loyalty_coupons: diferente origen, diferente financiador, diferente flujo.
  */
@@ -21,10 +21,6 @@ export class AcquisitionCouponEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   value: number;
 
-  /**
-   * Enforced en domain service: minimumTicket = value * 4
-   * No se valida solo en DB para que el error sea semántico, no de constraint.
-   */
   @Column({ name: 'minimum_ticket', type: 'decimal', precision: 10, scale: 2 })
   minimumTicket: number;
 

@@ -3,23 +3,33 @@ import { CouponValueCalculator } from './coupon-value-calculator.service';
 describe('CouponValueCalculator', () => {
   const calc = new CouponValueCalculator();
 
-  it('returns raw value when below subsidy cap', () => {
-    // avg=$25, pct=0.04, cap=0.04 → raw=$1.00 = cap=$1.00
-    expect(calc.calculate(25, 0.04, 0.04)).toBe(1.0);
+  it('uses 18% of avgTicket for a mid-range merchant', () => {
+    // avg=$10, tier1 → 10*0.18=$1.80, within [$0.50,$2.00]
+    expect(calc.calculate(10, 1)).toBe(1.80);
   });
 
-  it('caps at subsidy cap when cashback_pct exceeds it', () => {
-    // avg=$25, pct=0.12, cap=0.04 → raw=$3.00, cap=$1.00 → returns $1.00
-    expect(calc.calculate(25, 0.12, 0.04)).toBe(1.0);
+  it('floors to tier minimum for very low-ticket merchant', () => {
+    // avg=$2, tier1 → 2*0.18=$0.36 < $0.50 → $0.50
+    expect(calc.calculate(2, 1)).toBe(0.50);
   });
 
-  it('scales proportionally with average ticket', () => {
-    // Electronics: avg=$200, pct=0.04, cap=0.01 → raw=$8, cap=$2 → $2.00
-    expect(calc.calculate(200, 0.04, 0.01)).toBe(2.0);
+  it('caps to tier maximum for high-ticket merchant', () => {
+    // avg=$50, tier1 → 50*0.18=$9.00 > $2.00 → $2.00
+    expect(calc.calculate(50, 1)).toBe(2.00);
+  });
+
+  it('applies higher tier bounds for tier 3', () => {
+    // avg=$20, tier3 → 20*0.18=$3.60, within [$1.50,$5.00]
+    expect(calc.calculate(20, 3)).toBe(3.60);
+  });
+
+  it('floors tier 2 for low-ticket merchant', () => {
+    // avg=$3, tier2 → 3*0.18=$0.54 < $1.00 → $1.00
+    expect(calc.calculate(3, 2)).toBe(1.00);
   });
 
   it('rounds to 2 decimal places', () => {
-    const result = calc.calculate(33, 0.05, 0.10);
-    expect(result).toBe(1.65);
+    // avg=$7, tier1 → 7*0.18=$1.26
+    expect(calc.calculate(7, 1)).toBe(1.26);
   });
 });

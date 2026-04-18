@@ -39,6 +39,9 @@ export class MerchantEntity {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
+  @Column({ name: 'loyalty_enabled', default: false })
+  loyaltyEnabled: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

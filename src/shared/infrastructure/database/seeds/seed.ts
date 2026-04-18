@@ -1,6 +1,8 @@
 import { DataSource } from 'typeorm';
 import { MerchantCategoryEntity } from '@contexts/loyalty/domain/entities/merchant-category.entity';
 import { TierConfigEntity } from '@contexts/loyalty/domain/entities/tier-config.entity';
+import { MerchantEntity } from '@contexts/merchants/domain/entities/merchant.entity';
+import { runDatasetSeed } from './dataset.seed';
 
 const CATEGORIES = [
   { code: 'FOOD_BEVERAGE',     name: 'Restaurantes y Comida',    typicalMarginPct: 0.65, subsidyCapPct: 0.04 },
@@ -25,9 +27,21 @@ const TIER_CASHBACK: Record<string, [number, number, number]> = {
 
 const THRESHOLDS = [100, 250, 500];
 
+const INITIAL_CREDIT = 5;
+const OLD_INITIAL_CREDIT = 100;
+
 export async function runSeeds(dataSource: DataSource): Promise<void> {
   const categoryRepo = dataSource.getRepository(MerchantCategoryEntity);
   const tierConfigRepo = dataSource.getRepository(TierConfigEntity);
+  const merchantRepo = dataSource.getRepository(MerchantEntity);
+
+  // Dar $5 a cualquier merchant con menos de $5 en saldo (migración crédito inicial)
+  await merchantRepo
+    .createQueryBuilder()
+    .update()
+    .set({ couponFundingBalance: INITIAL_CREDIT })
+    .where('coupon_funding_balance < :credit', { credit: INITIAL_CREDIT })
+    .execute();
 
   for (const cat of CATEGORIES) {
     const existing = await categoryRepo.findOneBy({ code: cat.code });
@@ -48,6 +62,8 @@ export async function runSeeds(dataSource: DataSource): Promise<void> {
       );
     }
   }
+
+  await runDatasetSeed(dataSource);
 
   console.log('Seeds completed.');
 }

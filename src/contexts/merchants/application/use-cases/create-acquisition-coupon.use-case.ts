@@ -25,10 +25,12 @@ export class CreateAcquisitionCouponUseCase {
     const existing = await this.couponRepo.findByCode(dto.code);
     if (existing) throw new ConflictException('Coupon code already exists');
 
-    // Regla dura: minimumTicket = value * 4
-    const minimumTicket = dto.value * 4;
+    if (dto.minimumPurchase < dto.value) {
+      throw new BadRequestException(
+        `minimumPurchase ($${dto.minimumPurchase}) must be greater than or equal to coupon value ($${dto.value})`,
+      );
+    }
 
-    // Validar que el merchant tiene fondos suficientes
     if (Number(merchant.couponFundingBalance) < dto.value) {
       throw new UnprocessableEntityException(
         `Insufficient coupon funding balance. Available: $${merchant.couponFundingBalance}`,
@@ -38,7 +40,6 @@ export class CreateAcquisitionCouponUseCase {
     const expiresAt = new Date(dto.expiresAt);
     if (expiresAt <= new Date()) throw new BadRequestException('expiresAt must be in the future');
 
-    // Descontar del saldo de financiamiento del comerciante
     await this.merchantRepo.updateCouponFundingBalance(
       merchantId,
       Number(merchant.couponFundingBalance) - dto.value,
@@ -48,7 +49,7 @@ export class CreateAcquisitionCouponUseCase {
       merchantId,
       code: dto.code.toUpperCase(),
       value: dto.value,
-      minimumTicket,
+      minimumTicket: dto.minimumPurchase,
       isRedeemed: false,
       redeemedBy: null,
       redeemedAt: null,

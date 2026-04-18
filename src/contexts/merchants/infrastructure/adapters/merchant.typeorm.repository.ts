@@ -23,6 +23,10 @@ export class MerchantTypeOrmRepository implements MerchantRepositoryPort {
     return this.repo.findOneBy({ ownerEmail: email });
   }
 
+  findByBusinessName(name: string): Promise<MerchantEntity | null> {
+    return this.repo.findOneBy({ businessName: name });
+  }
+
   save(merchant: Omit<MerchantEntity, 'id' | 'createdAt' | 'updatedAt'>): Promise<MerchantEntity> {
     return this.repo.save(this.repo.create(merchant));
   }
@@ -33,5 +37,9 @@ export class MerchantTypeOrmRepository implements MerchantRepositoryPort {
 
   async updateCouponFundingBalance(id: string, newBalance: number): Promise<void> {
     await this.repo.update(id, { couponFundingBalance: newBalance });
+  }
+
+  async updateLoyaltyEnabled(id: string, enabled: boolean): Promise<void> {
+    await this.repo.update(id, { loyaltyEnabled: enabled });
   }
 }

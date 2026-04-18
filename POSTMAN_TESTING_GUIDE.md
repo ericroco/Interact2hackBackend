@@ -8,122 +8,133 @@
 1. Crea una **Collection** llamada `Deuna Loyalty`.
 2. Ve a **Collection > Variables** y agrega:
 
-| Variable         | Initial Value | Descripción                    |
-|------------------|---------------|-------------------------------|
-| `base_url`       | `http://localhost:3000` | URL base |
-| `user_token`     | *(vacío)*     | Se llena automáticamente      |
-| `merchant_token` | *(vacío)*     | Se llena automáticamente      |
-| `merchant_id`    | *(vacío)*     | Se llena automáticamente      |
-| `category_id`    | *(vacío)*     | Se llena al listar categorías |
-
-3. En cada request que devuelva un token, agrega este script en **Tests** (se indica en cada paso):
-
-```javascript
-// Script genérico para guardar token de usuario
-const json = pm.response.json();
-pm.collectionVariables.set("user_token", json.data.accessToken);
-```
+| Variable         | Initial Value           | Descripción                      |
+|------------------|-------------------------|----------------------------------|
+| `base_url`       | `http://localhost:3000` | URL base                         |
+| `user_token`     | *(vacío)*               | Se llena automáticamente         |
+| `merchant_token` | *(vacío)*               | Se llena automáticamente         |
+| `merchant_id`    | *(vacío)*               | Se llena automáticamente         |
+| `category_id`    | *(vacío)*               | Se llena al listar categorías    |
 
 ---
 
-## FASE 0 — Verificar que el sistema está vivo
+## FASE 0 — Verificar sistema
 
 ### 0.1 Health Check
 ```
 GET {{base_url}}/health
 ```
-**Respuesta esperada:**
 ```json
-{
-  "status": "ok",
-  "timestamp": "2026-04-18T...",
-  "services": { "database": "ok", "redis": "ok" }
-}
+{ "status": "ok", "services": { "database": "ok", "redis": "ok" } }
 ```
-> Si `database` o `redis` están en `error`, el servidor no está listo. Revisar Docker.
 
 ---
 
-## FASE 1 — Obtener categoryId (auto-seeded al bootear)
+## FASE 1 — Datos demo (cargados automáticamente al bootear)
 
-El seeder ya insertó las categorías al arrancar. Necesitas el `categoryId` de una categoría para registrar un merchant.
+Al arrancar el servidor se insertan automáticamente:
+- **50 merchants** de los datasets (Comida, Víveres, Farmacia, Transporte) con `loyaltyEnabled: true`
+- **100 usuarios** con tiers 1, 2 y 3 y puntos reales
+- **Cupones activos** para pares usuario-merchant con `estado_yapa: Disponible`
 
-### 1.1 Consultar categorías disponibles
-Ejecuta esta query directamente en tu cliente de PostgreSQL (DBeaver, TablePlus, psql, etc.):
+Contraseña de todos los usuarios y merchants demo: **`deuna123`**
 
+### Consultar datos demo en PostgreSQL:
 ```sql
-SELECT id, code, name FROM merchant_categories ORDER BY name;
+-- Ver merchants demo con loyalty activo
+SELECT business_name, average_ticket, loyalty_enabled FROM merchants ORDER BY created_at LIMIT 20;
+
+-- Ver usuarios por tier
+SELECT u.full_name, lt.tier_level, lt.trust_points, lc.value as coupon_value
+FROM users u
+JOIN loyalty_tiers lt ON lt.user_id = u.id
+LEFT JOIN loyalty_coupons lc ON lc.user_id = u.id AND lc.merchant_id = lt.merchant_id AND lc.status = 'active'
+ORDER BY lt.tier_level DESC, lt.trust_points DESC
+LIMIT 20;
 ```
 
-Anota el `id` de la categoría que quieras usar. Sugerencia: **FOOD_BEVERAGE** (restaurantes).
+### Login de un usuario demo:
+```
+POST {{base_url}}/auth/login
+```
+```json
+{ "phone": "+5939228431069", "password": "deuna123" }
+```
+> Formato: `+593` + número sin el 0 inicial. Ej: `09228431069` → `+5939228431069`
 
-Guarda ese UUID en la variable de colección `category_id`.
-
-> Alternativamente, después de registrar y loguearte como merchant, puedes llamar al endpoint de categorías:
-> `GET {{base_url}}/merchants/categories` (requiere token de merchant)
+### Login de un merchant demo:
+```
+POST {{base_url}}/merchants/auth/login
+```
+```json
+{ "ownerEmail": "m001@deuna-demo.ec", "password": "deuna123" }
+```
+> Formato email: `m` + número en minúscula + `@deuna-demo.ec`. Ej: `m001@deuna-demo.ec`
 
 ---
 
 ## FASE 2 — Merchant (App: Deuna Negocios)
 
-### 2.1 Registrar Merchant
+### 2.1 Registrar Merchant nuevo
 ```
 POST {{base_url}}/merchants/auth/register
 Content-Type: application/json
 ```
-**Body:**
 ```json
 {
   "categoryId": "{{category_id}}",
   "businessName": "Café El Rincón",
-  "ruc": "1234567890",
+  "ruc": "1234567890001",
   "ownerEmail": "elrincon@test.com",
   "password": "password123"
 }
 ```
-**Respuesta esperada (201):**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid-del-merchant",
-    "businessName": "Café El Rincón",
-    "ownerEmail": "elrincon@test.com"
-  }
-}
-```
+> El merchant arranca con **`loyaltyEnabled: false`** y **$5.00** en saldo de cupones.
 
-**Script Tests** — guarda el `merchant_id`:
+**Script Tests:**
 ```javascript
 const json = pm.response.json();
-pm.collectionVariables.set("merchant_id", json.data.id);
+pm.collectionVariables.set("merchant_token", json.data.accessToken);
+pm.collectionVariables.set("merchant_id", json.data.merchantId);
 ```
 
 ---
 
-### 2.2 Login Merchant
+### 2.2 Activar el programa de lealtad ⚠️ OBLIGATORIO ANTES DE ESCANEAR
+
+Por defecto el loyalty está **desactivado**. El merchant debe activarlo explícitamente:
+
+```
+PATCH {{base_url}}/merchants/me/loyalty
+Authorization: Bearer {{merchant_token}}
+Content-Type: application/json
+```
+```json
+{ "enabled": true }
+```
+**Respuesta esperada (200):**
+```json
+{ "success": true, "data": { "loyaltyEnabled": true } }
+```
+
+> Sin este paso, `/loyalty/scan` responderá **422** con `Loyalty program not enabled for this merchant`.
+
+Para **desactivar** el programa:
+```json
+{ "enabled": false }
+```
+
+---
+
+### 2.3 Login Merchant
 ```
 POST {{base_url}}/merchants/auth/login
 Content-Type: application/json
 ```
-**Body:**
 ```json
-{
-  "ownerEmail": "elrincon@test.com",
-  "password": "password123"
-}
+{ "ownerEmail": "elrincon@test.com", "password": "password123" }
 ```
-**Respuesta esperada (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "accessToken": "eyJhbGci..."
-  }
-}
-```
-
-**Script Tests** — guarda el token:
+**Script Tests:**
 ```javascript
 const json = pm.response.json();
 pm.collectionVariables.set("merchant_token", json.data.accessToken);
@@ -131,61 +142,80 @@ pm.collectionVariables.set("merchant_token", json.data.accessToken);
 
 ---
 
-### 2.3 Ver estadísticas del merchant (dashboard Deuna Negocios)
+### 2.4 Ver estadísticas del merchant
 ```
 GET {{base_url}}/merchants/me/stats
 Authorization: Bearer {{merchant_token}}
 ```
-**Respuesta esperada (200):**
 ```json
 {
   "success": true,
   "data": {
     "merchantId": "...",
     "businessName": "Café El Rincón",
-    "totalTransactions": 0,
-    "totalRevenue": "0.00",
+    "couponFundingBalance": "5.00",
     "averageTicket": "0.00",
-    "activeUsersCount": 0,
-    "loyaltyDistribution": []
+    "loyaltyEnabled": false
   }
 }
 ```
 
 ---
 
-### 2.4 Crear cupón de adquisición (financiado por el merchant)
+### 2.5 Crear cupones de adquisición con el crédito inicial ($5)
+
+El merchant decide libremente:
+- `value`: valor del descuento
+- `minimumPurchase`: compra mínima para usar el cupón (≥ value)
+- `code`: código alfanumérico (4–20 chars)
+
 ```
 POST {{base_url}}/merchants/me/coupons
 Authorization: Bearer {{merchant_token}}
 Content-Type: application/json
 ```
-**Body:**
+**Ejemplo A — un cupón de $5:**
 ```json
 {
   "value": 5.00,
-  "code": "BIENVENIDO10",
+  "minimumPurchase": 15.00,
+  "code": "BIENVENIDO5",
   "expiresAt": "2026-12-31T23:59:59.000Z"
 }
 ```
-**Regla de dominio:** `minimumTicket = value * 4` → el sistema calculará `$20` como monto mínimo de compra para usar este cupón.
 
-**Respuesta esperada (201):**
+**Ejemplo B — dos cupones con $5:**
 ```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid-coupon",
-    "code": "BIENVENIDO10",
-    "value": "5.00",
-    "minimumTicket": "20.00"
-  }
-}
+{ "value": 2.00, "minimumPurchase": 8.00, "code": "PROMO2", "expiresAt": "2026-12-31T23:59:59.000Z" }
+```
+```json
+{ "value": 3.00, "minimumPurchase": 10.00, "code": "PROMO3", "expiresAt": "2026-12-31T23:59:59.000Z" }
+```
+
+**Error — minimumPurchase < value (400):**
+```json
+{ "value": 5.00, "minimumPurchase": 3.00, "code": "MAL", "expiresAt": "..." }
+```
+→ `minimumPurchase must be >= value`
+
+**Error — saldo insuficiente (422):**
+→ `Insufficient coupon funding balance`
+
+---
+
+### 2.6 Recargar saldo
+```
+POST {{base_url}}/merchants/me/fund
+Authorization: Bearer {{merchant_token}}
+Content-Type: application/json
+```
+```json
+{ "amount": 20.00 }
 ```
 
 ---
 
-### 2.5 Listar cupones de adquisición del merchant
+### 2.7 Listar cupones del merchant
 ```
 GET {{base_url}}/merchants/me/coupons
 Authorization: Bearer {{merchant_token}}
@@ -193,12 +223,11 @@ Authorization: Bearer {{merchant_token}}
 
 ---
 
-### 2.6 Listar categorías (verificación)
+### 2.8 Listar categorías
 ```
 GET {{base_url}}/merchants/categories
 Authorization: Bearer {{merchant_token}}
 ```
-**Respuesta esperada:** lista de 7 categorías seeded.
 
 ---
 
@@ -209,7 +238,6 @@ Authorization: Bearer {{merchant_token}}
 POST {{base_url}}/auth/register
 Content-Type: application/json
 ```
-**Body:**
 ```json
 {
   "phone": "+593987654321",
@@ -218,43 +246,7 @@ Content-Type: application/json
   "email": "maria@test.com"
 }
 ```
-> `phone` debe ser formato E.164 (con código de país). Ecuador: `+593...`
-
-**Respuesta esperada (201):**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid-usuario",
-    "phone": "+593987654321",
-    "fullName": "María López"
-  }
-}
-```
-
----
-
-### 3.2 Login Usuario
-```
-POST {{base_url}}/auth/login
-Content-Type: application/json
-```
-**Body:**
-```json
-{
-  "phone": "+593987654321",
-  "password": "password123"
-}
-```
-**Respuesta esperada (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "accessToken": "eyJhbGci..."
-  }
-}
-```
+> Formato E.164: `+593XXXXXXXXX`. Ecuador: `+593 9XXXXXXXX`
 
 **Script Tests:**
 ```javascript
@@ -264,29 +256,33 @@ pm.collectionVariables.set("user_token", json.data.accessToken);
 
 ---
 
-## FASE 4 — Flujo de Lealtad (el corazón del sistema)
+### 3.2 Login Usuario
+```
+POST {{base_url}}/auth/login
+Content-Type: application/json
+```
+```json
+{ "phone": "+593987654321", "password": "password123" }
+```
 
-> Asegúrate de tener `user_token` y `merchant_id` guardados en variables.
+---
 
-### 4.1 Primera compra — generar puntos (sin cupón activo)
+## FASE 4 — Flujo de Lealtad
+
+> El merchant DEBE tener `loyaltyEnabled: true` (ver FASE 2.2).
+
+### 4.1 Primera compra — generar puntos
 ```
 POST {{base_url}}/loyalty/scan
 Authorization: Bearer {{user_token}}
 Content-Type: application/json
 ```
-**Body:**
 ```json
-{
-  "merchantId": "{{merchant_id}}",
-  "amount": 15.00
-}
+{ "merchantId": "{{merchant_id}}", "amount": 15.00 }
 ```
-**Respuesta esperada (200):**
 ```json
 {
-  "success": true,
   "data": {
-    "transactionId": "...",
     "trustPointsEarned": 10.0,
     "totalTrustPoints": 10.0,
     "tierLevel": 1,
@@ -297,261 +293,131 @@ Content-Type: application/json
   }
 }
 ```
-> `trustPointsEarned = (amount / avgTicket) * 10`. En la primera compra, `avgTicket` empieza en `0` y el merchant actualiza su average. Los puntos exactos pueden variar según el avg_ticket del merchant.
 
-**Verifica la lógica:**
-- `trustPointsEarned` debe ser > 0
-- `couponApplied` debe ser `null` (no hay cupón todavía)
-- `antifraudBlocked` debe ser `false`
+> La fórmula `(amount / avgTicket) * 10` es equitativa: gastar el ticket promedio siempre da 10 puntos, sin importar el tipo de local.
 
 ---
 
-### 4.2 Antifraud — segunda compra inmediata (misma sesión)
-```
-POST {{base_url}}/loyalty/scan
-Authorization: Bearer {{user_token}}
-Content-Type: application/json
-```
-**Body (mismo merchant, inmediatamente):**
+### 4.2 Loyalty desactivado (422)
+Si el merchant NO activó su programa:
 ```json
-{
-  "merchantId": "{{merchant_id}}",
-  "amount": 20.00
-}
+{ "statusCode": 422, "message": "Loyalty program not enabled for this merchant" }
 ```
-**Respuesta esperada — BLOQUEADA por velocity limit:**
-```json
-{
-  "success": true,
-  "data": {
-    "trustPointsEarned": 0,
-    "antifraudBlocked": true,
-    "couponApplied": null,
-    "couponUnlocked": null
-  }
-}
-```
-> El sistema permite máx. 1 transacción de puntos por usuario-merchant cada 4 horas (ANTIFRAUD_VELOCITY_WINDOW_SECONDS=14400). La transacción se registra pero sin puntos.
 
 ---
 
-### 4.3 Ver perfil de lealtad del usuario
+### 4.3 Antifraud — segunda compra inmediata
+```json
+{ "merchantId": "{{merchant_id}}", "amount": 20.00 }
+```
+```json
+{ "data": { "trustPointsEarned": 0, "antifraudBlocked": true } }
+```
+> Máximo 1 tx con puntos por (usuario, merchant) cada 4 horas.
+
+---
+
+### 4.4 Ver perfil de lealtad
 ```
 GET {{base_url}}/loyalty/profile
 Authorization: Bearer {{user_token}}
 ```
-**Respuesta esperada (200):**
 ```json
 {
-  "success": true,
   "data": {
-    "userId": "...",
-    "loyaltyTiers": [
-      {
-        "merchantId": "...",
-        "merchantName": "Café El Rincón",
-        "tierLevel": 1,
-        "trustPoints": 10.0,
-        "pointsToNextCoupon": 90,
-        "activeCoupon": null,
-        "degradationDueDate": "2026-..."
-      }
-    ]
+    "loyaltyTiers": [{
+      "merchantName": "Café El Rincón",
+      "tierLevel": 1,
+      "trustPoints": 10.0,
+      "pointsToNextCoupon": 90,
+      "activeCoupon": null
+    }]
   }
 }
 ```
 
 ---
 
-### 4.4 Simular acumulación hasta el umbral (Tier 1 = 100 puntos)
+### 4.5 Probar con usuario demo (ya tiene puntos y cupones)
 
-Para llegar al umbral rápido necesitas esperar las 4 horas del velocity limit, o temporalmente cambiar `ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0` en `.env` y reiniciar el servidor.
-
-**Con velocity limit desactivado**, repite el `POST /loyalty/scan` con montos altos hasta ver `couponUnlocked` en la respuesta:
-
-```json
-{
-  "merchantId": "{{merchant_id}}",
-  "amount": 150.00
-}
+Consulta un usuario tier 3 de la DB:
+```sql
+SELECT u.phone, u.full_name, lt.tier_level, lt.trust_points, lc.value
+FROM users u
+JOIN loyalty_tiers lt ON lt.user_id = u.id
+JOIN loyalty_coupons lc ON lc.user_id = u.id AND lc.status = 'active'
+ORDER BY lt.tier_level DESC LIMIT 5;
 ```
 
-**Respuesta cuando se desbloquea el cupón Yapa:**
-```json
-{
-  "success": true,
-  "data": {
-    "trustPointsEarned": 15.0,
-    "totalTrustPoints": 105.3,
-    "tierLevel": 1,
-    "couponApplied": null,
-    "couponUnlocked": {
-      "value": 4.80,
-      "message": "¡Tienes una Yapa de $4.80 en Café El Rincón!"
-    }
-  }
-}
-```
-> Esto significa que se generó un `loyalty_coupon` con `status: active`. Se aplicará automáticamente en la siguiente compra.
+Login con ese usuario (contraseña: `deuna123`), luego haz un scan.
 
 ---
 
-### 4.5 Aplicar cupón Yapa en la siguiente compra
+### 4.6 Acumular hasta desbloquear cupón Yapa
 
-Haz otra compra después de desbloquear el cupón:
+Desactiva velocity limit para pruebas rápidas en `.env`:
 ```
-POST {{base_url}}/loyalty/scan
-Authorization: Bearer {{user_token}}
-Content-Type: application/json
+ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0
+```
+
+Repite scans con amount alto hasta ver `couponUnlocked`:
+```json
+{ "merchantId": "{{merchant_id}}", "amount": 150.00 }
 ```
 ```json
 {
-  "merchantId": "{{merchant_id}}",
-  "amount": 20.00
+  "couponUnlocked": { "value": 1.50, "message": "¡Tienes una Yapa de $1.50 en Café El Rincón!" }
 }
 ```
-**Respuesta cuando el cupón se aplica automáticamente:**
-```json
-{
-  "success": true,
-  "data": {
-    "transactionId": "...",
-    "trustPointsEarned": 10.0,
-    "totalTrustPoints": 10.0,
-    "tierLevel": 2,
-    "couponApplied": {
-      "id": "uuid-coupon",
-      "discountAmount": 4.80
-    },
-    "couponUnlocked": null,
-    "antifraudBlocked": false
-  }
-}
-```
-**Verifica:**
-- `couponApplied` tiene el descuento aplicado
-- `totalTrustPoints` volvió a `~10` (puntos reseteados tras redimir)
-- `tierLevel` subió de 1 → 2 (upgrade automático al redimir)
+
+> **Fórmula del cupón (equitativa):** `clamp(avgTicket × 18%, tierFloor, tierCap)`
+> - Tier 1: [$0.50 – $2.00]
+> - Tier 2: [$1.00 – $3.50]
+> - Tier 3: [$1.50 – $5.00]
+> 
+> Ejemplo: Food merchant avgTicket=$8 → $8×18%=$1.44 → cupón Tier1: **$1.44**  
+> Ejemplo: Farmacia avgTicket=$40 → capped → cupón Tier1: **$2.00** (techo)  
+> Ejemplo: Tienda avgTicket=$2 → floored → cupón Tier1: **$0.50** (piso)
 
 ---
 
-## FASE 5 — Pruebas de seguridad (Guard)
-
-### 5.1 Intentar usar token de usuario en endpoint de merchant
+### 4.7 Aplicar cupón Yapa en siguiente compra
+```json
+{ "merchantId": "{{merchant_id}}", "amount": 20.00 }
 ```
-GET {{base_url}}/merchants/me/stats
-Authorization: Bearer {{user_token}}
-```
-**Respuesta esperada (403):**
 ```json
 {
-  "statusCode": 403,
-  "message": "Forbidden resource"
+  "couponApplied": { "discountAmount": 1.44 },
+  "tierLevel": 2,
+  "totalTrustPoints": 10.0
 }
 ```
-
-### 5.2 Intentar usar token de merchant en endpoint de usuario
-```
-POST {{base_url}}/loyalty/scan
-Authorization: Bearer {{merchant_token}}
-Content-Type: application/json
-```
-**Respuesta esperada (403):**
-```json
-{
-  "statusCode": 403,
-  "message": "Forbidden resource"
-}
-```
-
-### 5.3 Request sin token
-```
-GET {{base_url}}/loyalty/profile
-(sin header Authorization)
-```
-**Respuesta esperada (401):**
-```json
-{
-  "statusCode": 401,
-  "message": "Unauthorized"
-}
-```
-
-### 5.4 Token inválido / expirado
-```
-GET {{base_url}}/merchants/me/stats
-Authorization: Bearer tokenfalso123
-```
-**Respuesta esperada (401)**
+- `tierLevel` subió de 1 → 2
+- `trustPoints` se reseteó a ~10
 
 ---
 
-## FASE 6 — Validaciones de DTO
+## FASE 5 — Seguridad
 
-### 6.1 Registrar usuario con teléfono inválido
-```
-POST {{base_url}}/auth/register
-```
-```json
-{
-  "phone": "09912345",
-  "fullName": "Test",
-  "password": "password123"
-}
-```
-**Respuesta esperada (400):**
-```json
-{
-  "statusCode": 400,
-  "message": ["phone must be a valid E.164 number"]
-}
-```
+| Test | Endpoint | Resultado esperado |
+|------|----------|-------------------|
+| Token usuario en endpoint merchant | `GET /merchants/me/stats` con `user_token` | 403 |
+| Token merchant en endpoint usuario | `POST /loyalty/scan` con `merchant_token` | 403 |
+| Sin token | `GET /loyalty/profile` | 401 |
+| Token inválido | cualquier endpoint protegido | 401 |
 
-### 6.2 Crear cupón de adquisición con valor inválido
-```
-POST {{base_url}}/merchants/me/coupons
-Authorization: Bearer {{merchant_token}}
-```
-```json
-{
-  "value": -5,
-  "code": "X",
-  "expiresAt": "no-es-fecha"
-}
-```
-**Respuesta esperada (400)** con lista de errores de validación.
+---
 
-### 6.3 Scan con merchantId inválido
-```
-POST {{base_url}}/loyalty/scan
-Authorization: Bearer {{user_token}}
-```
-```json
-{
-  "merchantId": "no-es-uuid",
-  "amount": 10.00
-}
-```
-**Respuesta esperada (400)**
+## FASE 6 — Validaciones
 
-### 6.4 Scan con merchant que no existe
-```
-POST {{base_url}}/loyalty/scan
-Authorization: Bearer {{user_token}}
-```
-```json
-{
-  "merchantId": "00000000-0000-0000-0000-000000000000",
-  "amount": 10.00
-}
-```
-**Respuesta esperada (404):**
-```json
-{
-  "statusCode": 404,
-  "message": "Merchant not found"
-}
-```
+| Caso | Body / condición | Esperado |
+|------|-----------------|----------|
+| Loyalty desactivado | scan a merchant con `loyaltyEnabled: false` | 422 |
+| Phone inválido | `phone: "09912345"` | 400 |
+| minimumPurchase < value | en POST /me/coupons | 400 |
+| Saldo insuficiente cupón | value > balance | 422 |
+| merchantId inválido | `"no-es-uuid"` | 400 |
+| Merchant inexistente | UUID que no existe | 404 |
 
 ---
 
@@ -563,22 +429,43 @@ Authorization: Bearer {{user_token}}
 | 2 | POST | `/merchants/auth/register` | Ninguna | Negocios |
 | 3 | POST | `/merchants/auth/login` | Ninguna | Negocios |
 | 4 | GET | `/merchants/me/stats` | MerchantGuard | Negocios |
-| 5 | POST | `/merchants/me/coupons` | MerchantGuard | Negocios |
-| 6 | GET | `/merchants/me/coupons` | MerchantGuard | Negocios |
-| 7 | GET | `/merchants/categories` | MerchantGuard | Negocios |
-| 8 | POST | `/auth/register` | Ninguna | Deuna |
-| 9 | POST | `/auth/login` | Ninguna | Deuna |
-| 10 | POST | `/loyalty/scan` | UserGuard | Deuna |
-| 11 | GET | `/loyalty/profile` | UserGuard | Deuna |
+| 5 | **PATCH** | **`/merchants/me/loyalty`** | MerchantGuard | Negocios |
+| 6 | POST | `/merchants/me/coupons` | MerchantGuard | Negocios |
+| 7 | GET | `/merchants/me/coupons` | MerchantGuard | Negocios |
+| 8 | POST | `/merchants/me/fund` | MerchantGuard | Negocios |
+| 9 | GET | `/merchants/categories` | MerchantGuard | Negocios |
+| 10 | POST | `/auth/register` | Ninguna | Deuna |
+| 11 | POST | `/auth/login` | Ninguna | Deuna |
+| 12 | POST | `/loyalty/scan` | UserGuard | Deuna |
+| 13 | GET | `/loyalty/profile` | UserGuard | Deuna |
 
 ---
 
-## Tip: Acelerar pruebas del flujo de lealtad
+## Tip: Acelerar pruebas
 
-Para no esperar las 4h del antifraud, cambia temporalmente en `.env`:
-```
+```env
 ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0
 ```
-Reinicia el servidor. Así puedes hacer múltiples scans seguidos.
+Tier 1 = 100 puntos. Con amount=$150 y avgTicket=$15 → ~100 pts en 1 scan.
 
-Para el Tier 1, necesitas llegar a **100 puntos**. Cada scan aporta aprox. `(amount / avgTicket) * 10` puntos. Con un amount de `$150` y avgTicket de `$15`, ganas `~100 puntos` en una sola transacción.
+---
+
+## Notas de diseño
+
+### Fórmula de puntos (equitativa)
+`trustPoints = (monto / ticket_promedio_del_local) * 10`
+
+- Gastar exactamente el promedio = **10 puntos** en cualquier local.
+- Gastar el doble = 20 pts. Gastar la mitad = 5 pts.
+- El primer scan de un local nuevo: divisor = monto (siempre 10 pts de arranque).
+
+### Fórmula de cupones (equitativa con piso y techo)
+`couponValue = clamp(avgTicket × 18%, tierFloor, tierCap)`
+
+| Tier | Piso  | Techo |
+|------|-------|-------|
+| 1    | $0.50 | $2.00 |
+| 2    | $1.00 | $3.50 |
+| 3    | $1.50 | $5.00 |
+
+Garantiza cupones útiles para locales de ticket bajo ($1–$3) y evita cupones excesivos para locales de ticket alto.
