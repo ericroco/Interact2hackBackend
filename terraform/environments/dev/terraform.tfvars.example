@@ -1,0 +1,33 @@
+# ============================================================
+# terraform.tfvars — Valores para el entorno dev
+# Copia este archivo a terraform.tfvars y llena los valores.
+# NUNCA subas terraform.tfvars al git (ya está en .gitignore).
+# ============================================================
+
+aws_region = "us-east-1"
+environment = "dev"
+
+# VPC
+vpc_cidr           = "10.0.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b"]
+
+# RDS (PostgreSQL)
+db_name           = "deuna_loyalty"
+db_username       = "deuna"
+db_password       = "CAMBIA_ESTA_PASSWORD_SEGURA_2024"
+db_instance_class = "db.t3.micro"
+
+# Redis
+redis_node_type = "cache.t3.micro"
+
+# NestJS App
+# Reemplaza <ACCOUNT_ID> con tu AWS Account ID (12 dígitos)
+app_image = "<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/deuna-loyalty:latest"
+app_port  = 3000
+
+# JWT
+jwt_secret     = "CAMBIA_ESTE_SECRET_CON_AL_MENOS_64_CARACTERES_ALEATORIOS"
+jwt_expiration = "86400s"
+
+# Antifraud: 14400 = 4 horas (producción), 0 = desactivado (solo testing)
+antifraud_velocity_window_seconds = 14400

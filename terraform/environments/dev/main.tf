@@ -61,12 +61,15 @@ module "elasticache" {
 module "ecs" {
   source = "../../modules/ecs"
 
-  environment        = var.environment
-  vpc_id             = module.vpc.vpc_id
-  public_subnet_ids  = module.vpc.public_subnet_ids
-  private_subnet_ids = module.vpc.private_subnet_ids
-  app_image          = var.app_image
-  app_port           = var.app_port
-  database_url       = module.rds.database_url
-  redis_url          = module.elasticache.redis_url
+  environment                       = var.environment
+  vpc_id                            = module.vpc.vpc_id
+  public_subnet_ids                 = module.vpc.public_subnet_ids
+  private_subnet_ids                = module.vpc.private_subnet_ids
+  app_image                         = var.app_image
+  app_port                          = var.app_port
+  database_url                      = module.rds.database_url
+  redis_url                         = module.elasticache.redis_url
+  jwt_secret                        = var.jwt_secret
+  jwt_expiration                    = var.jwt_expiration
+  antifraud_velocity_window_seconds = var.antifraud_velocity_window_seconds
 }

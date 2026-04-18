@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   NotFoundException,
@@ -25,6 +26,7 @@ import { PlatformSubsidyLedgerEntity, SubsidyStatus } from '../../domain/entitie
 import { MerchantEntity } from '@contexts/merchants/domain/entities/merchant.entity';
 
 const COUPON_EXPIRY_DAYS = 30;
+const MAX_ACTIVE_YAPAS = 5;
 
 @Injectable()
 export class ProcessTransactionUseCase {
@@ -46,10 +48,25 @@ export class ProcessTransactionUseCase {
   async execute(userId: string, dto: ScanTransactionDto): Promise<TransactionResultDto> {
     const merchant = await this.merchantRepo.findById(dto.merchantId);
     if (!merchant) throw new NotFoundException('Merchant not found');
-    if (!merchant.loyaltyEnabled) throw new UnprocessableEntityException('Loyalty program not enabled for this merchant');
 
     const category = await this.categoryRepo.findById(merchant.categoryId);
     if (!category) throw new UnprocessableEntityException('Merchant category not configured');
+
+    // Validar yapa elegida por el usuario (si proporcionó couponId)
+    let chosenCoupon: LoyaltyCouponEntity | null = null;
+    if (dto.couponId) {
+      const candidate = await this.couponRepo.findById(dto.couponId);
+      if (
+        !candidate ||
+        candidate.userId !== userId ||
+        candidate.merchantId !== dto.merchantId ||
+        candidate.status !== CouponStatus.ACTIVE ||
+        candidate.expiresAt <= new Date()
+      ) {
+        throw new BadRequestException('Invalid or expired yapa coupon for this transaction');
+      }
+      chosenCoupon = candidate;
+    }
 
     const isBlocked = await this.antifraud.isVelocityLimitActive(userId, dto.merchantId);
 
@@ -66,12 +83,10 @@ export class ProcessTransactionUseCase {
       });
     }
 
-    const activeCoupon = await this.couponRepo.findActive(userId, dto.merchantId);
-
     const avgTicketSnapshot = Number(merchant.averageTicket);
     const trustPointsEarned = isBlocked
       ? 0
-      : this.effortEngine.calculate(dto.amount, avgTicketSnapshot, loyaltyTier.tierLevel);
+      : this.effortEngine.calculate(dto.amount, avgTicketSnapshot);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -86,8 +101,8 @@ export class ProcessTransactionUseCase {
           amount: dto.amount,
           trustPointsEarned,
           avgTicketSnapshot,
-          couponIdApplied: activeCoupon?.id ?? null,
-          couponDiscountAmount: activeCoupon?.value ?? 0,
+          couponIdApplied: chosenCoupon?.id ?? null,
+          couponDiscountAmount: chosenCoupon ? Number(chosenCoupon.value) : 0,
           tierAtTransaction: loyaltyTier.tierLevel,
           status: TransactionStatus.PENDING,
         }),
@@ -96,33 +111,26 @@ export class ProcessTransactionUseCase {
       let currentTierLevel = loyaltyTier.tierLevel;
       let currentPoints = Number(loyaltyTier.trustPoints);
 
-      // Redimir cupón activo si existe
-      if (activeCoupon) {
-        await queryRunner.manager.update(LoyaltyCouponEntity, activeCoupon.id, {
+      // Redimir la yapa elegida por el usuario (si eligió una)
+      if (chosenCoupon) {
+        await queryRunner.manager.update(LoyaltyCouponEntity, chosenCoupon.id, {
           status: CouponStatus.REDEEMED,
           redeemedInTransactionId: transaction.id,
         });
 
         await queryRunner.manager.save(
           queryRunner.manager.create(PlatformSubsidyLedgerEntity, {
-            couponId: activeCoupon.id,
+            couponId: chosenCoupon.id,
             transactionId: transaction.id,
             merchantId: dto.merchantId,
             userId,
-            amount: activeCoupon.value,
+            amount: chosenCoupon.value,
             status: SubsidyStatus.PENDING,
             settledAt: null,
           }),
         );
-
-        // Subir tier y resetear puntos al redimir
-        currentTierLevel = this.tierService.nextTier(currentTierLevel);
-        currentPoints = 0;
-
-        await queryRunner.manager.update(LoyaltyTierEntity, loyaltyTier.id, {
-          tierLevel: currentTierLevel,
-          trustPoints: 0,
-        });
+        // Al redimir NO se resetean puntos ni se sube el tier.
+        // Eso ocurrió cuando se GENERÓ la yapa.
       }
 
       // Acumular puntos de esta transacción
@@ -135,21 +143,14 @@ export class ProcessTransactionUseCase {
         new Date(),
       );
 
-      await queryRunner.manager.update(LoyaltyTierEntity, loyaltyTier.id, {
-        trustPoints: newTrustPoints,
-        lastTransactionAt: new Date(),
-        degradationDueDate,
-        avgFrequencyDays,
-      });
-
       // Actualizar ticket promedio del local (media exponencial)
       const newAvgTicket = this.effortEngine.updateAverageTicket(avgTicketSnapshot, dto.amount);
       await queryRunner.manager.update(MerchantEntity, merchant.id, {
         averageTicket: newAvgTicket,
       });
 
-      // Verificar si se alcanzó el umbral para generar nuevo cupón
-      let newCouponUnlocked: { value: number; message: string } | null = null;
+      // Verificar si se alcanzó el umbral para generar nueva yapa
+      let newCouponUnlocked: { id: string; value: number; message: string } | null = null;
 
       if (!isBlocked) {
         const tierConfig = await this.tierConfigRepo.findByCategoryAndTier(
@@ -157,35 +158,65 @@ export class ProcessTransactionUseCase {
           currentTierLevel,
         );
 
-        const hasActiveAfterRedemption = false; // el cupón ya se consumió arriba
+        const activeYapasCount = await this.couponRepo.countActive(userId, dto.merchantId);
         const thresholdReached = tierConfig && newTrustPoints >= tierConfig.pointsThreshold;
-        const noActiveCoupon = !activeCoupon || !hasActiveAfterRedemption;
+        const canGenerateMore = activeYapasCount < MAX_ACTIVE_YAPAS;
 
-        if (thresholdReached && noActiveCoupon) {
-          const couponValue = this.couponCalc.calculate(newAvgTicket, currentTierLevel);
+        if (thresholdReached && canGenerateMore) {
+          // Capturar tier actual ANTES de subir (para el snapshot correcto)
+          const tierEarnedAt = currentTierLevel;
+          const couponValue = this.couponCalc.calculate(
+            newAvgTicket,
+            currentTierLevel,
+          );
 
           const expiresAt = new Date();
           expiresAt.setDate(expiresAt.getDate() + COUPON_EXPIRY_DAYS);
 
-          await queryRunner.manager.save(
+          // Al generar la yapa: subir tier y resetear puntos
+          currentTierLevel = this.tierService.nextTier(currentTierLevel);
+          const newYapa = await queryRunner.manager.save(
             queryRunner.manager.create(LoyaltyCouponEntity, {
               userId,
               merchantId: dto.merchantId,
-              tierEarnedAt: currentTierLevel,
+              tierEarnedAt,
               value: couponValue,
               avgTicketSnapshot: newAvgTicket,
-              cashbackPctSnapshot: Number(tierConfig!.cashbackPct),
+              cashbackPctSnapshot: 0.18,
               status: CouponStatus.ACTIVE,
               redeemedInTransactionId: null,
               expiresAt,
             }),
           );
 
+          // Resetear puntos tras ganar la yapa
+          await queryRunner.manager.update(LoyaltyTierEntity, loyaltyTier.id, {
+            tierLevel: currentTierLevel,
+            trustPoints: 0,
+            lastTransactionAt: new Date(),
+            degradationDueDate,
+            avgFrequencyDays,
+          });
+
           newCouponUnlocked = {
+            id: newYapa.id,
             value: couponValue,
-            message: `¡Tienes una Yapa de $${couponValue.toFixed(2)} en ${merchant.businessName}!`,
+            message: `¡Ganaste una Yapa de $${couponValue.toFixed(2)} en ${merchant.businessName}!`,
           };
+        } else {
+          // No se generó yapa, solo actualizar puntos normalmente
+          await queryRunner.manager.update(LoyaltyTierEntity, loyaltyTier.id, {
+            trustPoints: newTrustPoints,
+            lastTransactionAt: new Date(),
+            degradationDueDate,
+            avgFrequencyDays,
+          });
         }
+      } else {
+        // Transacción bloqueada por antifraud — actualizar solo timestamps
+        await queryRunner.manager.update(LoyaltyTierEntity, loyaltyTier.id, {
+          lastTransactionAt: new Date(),
+        });
       }
 
       // Completar transacción
@@ -199,22 +230,30 @@ export class ProcessTransactionUseCase {
         await this.antifraud.setVelocityLimit(userId, dto.merchantId);
       }
 
+      // Leer estado final para la respuesta
+      const finalTier = await this.loyaltyTierRepo.findByUserAndMerchant(userId, dto.merchantId);
+      const finalPoints = Number(finalTier?.trustPoints ?? 0);
+      const finalTierLevel = finalTier?.tierLevel ?? currentTierLevel;
+
       const tierConfig = await this.tierConfigRepo.findByCategoryAndTier(
         merchant.categoryId,
-        currentTierLevel,
+        finalTierLevel,
       );
       const pointsToNextCoupon = tierConfig
-        ? Math.max(0, tierConfig.pointsThreshold - newTrustPoints)
+        ? Math.max(0, tierConfig.pointsThreshold - finalPoints)
         : null;
+
+      const remainingActiveYapas = await this.couponRepo.countActive(userId, dto.merchantId);
 
       return {
         transactionId: transaction.id,
         trustPointsEarned,
-        totalTrustPoints: newTrustPoints,
-        tierLevel: currentTierLevel,
+        totalTrustPoints: finalPoints,
+        tierLevel: finalTierLevel,
         pointsToNextCoupon,
-        couponApplied: activeCoupon
-          ? { id: activeCoupon.id, discountAmount: Number(activeCoupon.value) }
+        activeYapasCount: remainingActiveYapas,
+        couponApplied: chosenCoupon
+          ? { id: chosenCoupon.id, discountAmount: Number(chosenCoupon.value) }
           : null,
         couponUnlocked: newCouponUnlocked,
         antifraudBlocked: isBlocked,

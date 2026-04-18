@@ -19,7 +19,7 @@ export class UserGuard implements CanActivate {
     try {
       const payload = await this.jwtService.verifyAsync(token);
       if (payload.role !== 'user') throw new UnauthorizedException('User token required');
-      request['user'] = payload;
+      (request as any).user = payload;
     } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }

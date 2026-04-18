@@ -4,6 +4,7 @@ export interface CouponAppliedDto {
 }
 
 export interface CouponUnlockedDto {
+  id: string;
   value: number;
   message: string;
 }
@@ -14,6 +15,7 @@ export interface TransactionResultDto {
   totalTrustPoints: number;
   tierLevel: number;
   pointsToNextCoupon: number | null;
+  activeYapasCount: number;
   couponApplied: CouponAppliedDto | null;
   couponUnlocked: CouponUnlockedDto | null;
   antifraudBlocked: boolean;

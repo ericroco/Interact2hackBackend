@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsPositive, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsPositive, IsUUID } from 'class-validator';
 
 export class ScanTransactionDto {
   @IsUUID()
@@ -8,4 +8,9 @@ export class ScanTransactionDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
   amount: number;
+
+  /** UUID de la yapa que el usuario elige canjear en esta compra. Opcional. */
+  @IsUUID()
+  @IsOptional()
+  couponId?: string;
 }

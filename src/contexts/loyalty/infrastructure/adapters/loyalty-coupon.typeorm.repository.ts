@@ -11,8 +11,19 @@ export class LoyaltyCouponTypeOrmRepository implements LoyaltyCouponRepositoryPo
     private readonly repo: Repository<LoyaltyCouponEntity>,
   ) {}
 
-  findActive(userId: string, merchantId: string): Promise<LoyaltyCouponEntity | null> {
-    return this.repo.findOneBy({ userId, merchantId, status: CouponStatus.ACTIVE });
+  findById(id: string): Promise<LoyaltyCouponEntity | null> {
+    return this.repo.findOneBy({ id });
+  }
+
+  findActiveByUserAndMerchant(userId: string, merchantId: string): Promise<LoyaltyCouponEntity[]> {
+    return this.repo.find({
+      where: { userId, merchantId, status: CouponStatus.ACTIVE },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async countActive(userId: string, merchantId: string): Promise<number> {
+    return this.repo.count({ where: { userId, merchantId, status: CouponStatus.ACTIVE } });
   }
 
   findAllByUser(userId: string): Promise<LoyaltyCouponEntity[]> {

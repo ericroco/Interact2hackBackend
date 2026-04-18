@@ -27,7 +27,7 @@ export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
       PlatformSubsidyLedgerEntity,
     ],
     migrations: [__dirname + '/migrations/*.{ts,js}'],
-    synchronize: config.get('NODE_ENV') === 'development',
+    synchronize: config.get('NODE_ENV') === 'development' || config.get('DB_SYNC') === 'true',
     logging: config.get('NODE_ENV') === 'development',
     ssl: config.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
   }),

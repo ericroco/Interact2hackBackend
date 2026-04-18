@@ -16,16 +16,14 @@ export enum CouponStatus {
 /**
  * Cupón de lealtad (Yapa) generado al alcanzar el umbral de puntos de un tier.
  * Reglas:
- *   - Máximo 1 activo por par (user_id, merchant_id) — garantizado por índice único.
- *   - Se aplica automáticamente en la siguiente compra al local.
- *   - Al redimirse: trust_points del loyalty_tier → 0, tier_level sube (si < 3).
+ *   - Máximo 5 activos por par (user_id, merchant_id) — validado en capa de aplicación.
+ *   - El usuario elige explícitamente qué yapa usar enviando su couponId en el scan.
+ *   - Al generarse: trust_points del loyalty_tier → 0, tier_level sube (si < 3).
+ *   - Al redimirse: no se afecta tier ni puntos (ya ocurrió al generarse).
  *   - Financiado 100% por Deuna → genera entrada en platform_subsidies_ledger.
  */
 @Entity('loyalty_coupons')
-@Index(['userId', 'merchantId', 'status'], {
-  unique: true,
-  where: `status = 'active'`,
-})
+@Index(['userId', 'merchantId'])
 export class LoyaltyCouponEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;

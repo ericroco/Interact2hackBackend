@@ -19,7 +19,7 @@ export class MerchantGuard implements CanActivate {
     try {
       const payload = await this.jwtService.verifyAsync(token);
       if (payload.role !== 'merchant') throw new UnauthorizedException('Merchant token required');
-      request['user'] = payload;
+      (request as any).user = payload;
     } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }

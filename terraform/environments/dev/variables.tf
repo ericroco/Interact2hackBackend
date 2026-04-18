@@ -62,3 +62,21 @@ variable "app_port" {
   type        = number
   default     = 3000
 }
+
+variable "jwt_secret" {
+  description = "JWT signing secret (use a long random string)"
+  type        = string
+  sensitive   = true
+}
+
+variable "jwt_expiration" {
+  description = "JWT token expiration (e.g. 86400s = 24h)"
+  type        = string
+  default     = "86400s"
+}
+
+variable "antifraud_velocity_window_seconds" {
+  description = "Ventana de antifraud en segundos (0 = desactivado, 14400 = 4h)"
+  type        = number
+  default     = 14400
+}

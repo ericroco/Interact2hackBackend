@@ -5,13 +5,24 @@ import { MerchantRepositoryPort, MERCHANT_REPOSITORY } from '@contexts/merchants
 import { TierConfigRepositoryPort, TIER_CONFIG_REPOSITORY } from '../../domain/ports/tier-config.repository.port';
 import { CouponStatus } from '../../domain/entities/loyalty-coupon.entity';
 
+export interface ActiveYapaDto {
+  /** ID para usar en el campo couponId del scan al canjear. */
+  id: string;
+  value: number;
+  tierEarnedAt: number;
+  expiresAt: Date;
+}
+
 export interface LoyaltyProfileEntry {
   merchantId: string;
   merchantName: string;
   tierLevel: number;
   trustPoints: number;
   pointsToNextCoupon: number | null;
-  activeCoupon: { value: number; expiresAt: Date } | null;
+  /** Lista de yapas activas. El usuario elige cuál usar pasando su id al scan. */
+  activeYapas: ActiveYapaDto[];
+  yapasCount: number;
+  totalYapasValue: number;
 }
 
 @Injectable()
@@ -25,11 +36,21 @@ export class GetUserLoyaltyProfileUseCase {
 
   async execute(userId: string): Promise<LoyaltyProfileEntry[]> {
     const tiers = await this.tierRepo.findAllByUser(userId);
-    const activeCoupons = await this.couponRepo.findAllByUser(userId).then((cs) =>
-      cs.filter((c) => c.status === CouponStatus.ACTIVE),
-    );
+    const allCoupons = await this.couponRepo.findAllByUser(userId);
 
-    const couponMap = new Map(activeCoupons.map((c) => [c.merchantId, c]));
+    const activeCouponsByMerchant = new Map<string, ActiveYapaDto[]>();
+    for (const c of allCoupons) {
+      if (c.status !== CouponStatus.ACTIVE) continue;
+      if (!activeCouponsByMerchant.has(c.merchantId)) {
+        activeCouponsByMerchant.set(c.merchantId, []);
+      }
+      activeCouponsByMerchant.get(c.merchantId)!.push({
+        id: c.id,
+        value: Number(c.value),
+        tierEarnedAt: c.tierEarnedAt,
+        expiresAt: c.expiresAt,
+      });
+    }
 
     const entries = await Promise.all(
       tiers.map(async (tier) => {
@@ -39,11 +60,13 @@ export class GetUserLoyaltyProfileUseCase {
           tier.tierLevel,
         );
 
-        const activeCoupon = couponMap.get(tier.merchantId);
+        const activeYapas = activeCouponsByMerchant.get(tier.merchantId) ?? [];
         const trustPoints = Number(tier.trustPoints);
         const pointsToNextCoupon = config
           ? Math.max(0, config.pointsThreshold - trustPoints)
           : null;
+
+        const totalYapasValue = activeYapas.reduce((sum, y) => sum + y.value, 0);
 
         return {
           merchantId: tier.merchantId,
@@ -51,9 +74,9 @@ export class GetUserLoyaltyProfileUseCase {
           tierLevel: tier.tierLevel,
           trustPoints,
           pointsToNextCoupon,
-          activeCoupon: activeCoupon
-            ? { value: Number(activeCoupon.value), expiresAt: activeCoupon.expiresAt }
-            : null,
+          activeYapas,
+          yapasCount: activeYapas.length,
+          totalYapasValue: Math.round(totalYapasValue * 100) / 100,
         };
       }),
     );

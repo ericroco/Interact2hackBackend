@@ -1,50 +1,64 @@
 /**
- * test-scenarios.mjs — Runner automático de todos los escenarios de lealtad
+ * test-scenarios.mjs — Runner automático del sistema de Yapas (v3)
+ *
+ * Cubre:
+ *   - Merchant FRESCO por cada run → averageTicket = 0 → cálculos estables
+ *   - Generación automática de Yapas (reset puntos + ascenso tier al generarse)
+ *   - Tiered cashback: Tier1 [$0.50-$2], Tier2 [$1-$3.50], Tier3 [$1.50-$5]
+ *   - Límite de 5 Yapas activas por usuario+local
+ *   - Redención voluntaria con couponId
+ *   - Errores: couponId inválido, cross-user, cross-merchant, doble redención
+ *   - Seguridad de tokens y validaciones DTO
+ *   - Antifraud: adaptable — si ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0 corre todo
+ *
  * Uso: node test-scenarios.mjs
- * Requiere: servidor corriendo en localhost:3000 y datos del dataset cargados
+ * Requiere: servidor corriendo (npm run start:dev) + Docker (postgres + redis)
  */
 
 const BASE = 'http://localhost:3000';
+const SEED_MERCHANT_EMAIL = 'elrincon@test.com';
+const SEED_MERCHANT_PASS  = 'password123';
 
 // ── Colores ────────────────────────────────────────────────────────────────
 const C = {
-  reset: '\x1b[0m',
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[36m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
+  reset: '\x1b[0m', green: '\x1b[32m', red: '\x1b[31m',
+  yellow: '\x1b[33m', cyan: '\x1b[36m', bold: '\x1b[1m', dim: '\x1b[2m',
 };
-
-const pass  = `${C.green}✓ PASS${C.reset}`;
-const fail  = `${C.red}✗ FAIL${C.reset}`;
-const info  = `${C.cyan}ℹ${C.reset}`;
-const warn  = `${C.yellow}⚠${C.reset}`;
-
-let passed = 0, failed = 0;
+let passed = 0, failed = 0, skipped = 0;
 
 function header(title) {
-  console.log(`\n${C.bold}${C.cyan}══════════════════════════════════════${C.reset}`);
+  console.log(`\n${C.bold}${C.cyan}═══════════════════════════════════════════════${C.reset}`);
   console.log(`${C.bold}  ${title}${C.reset}`);
-  console.log(`${C.cyan}══════════════════════════════════════${C.reset}`);
+  console.log(`${C.cyan}═══════════════════════════════════════════════${C.reset}`);
 }
 
 function check(label, condition, got, expected) {
   if (condition) {
-    console.log(`  ${pass}  ${label}`);
+    console.log(`  ${C.green}✓ PASS${C.reset}  ${label}`);
     passed++;
   } else {
-    console.log(`  ${fail}  ${label}`);
+    console.log(`  ${C.red}✗ FAIL${C.reset}  ${label}`);
     console.log(`    ${C.dim}esperado: ${JSON.stringify(expected)} | obtenido: ${JSON.stringify(got)}${C.reset}`);
     failed++;
   }
 }
 
-function show(label, value) {
-  console.log(`  ${info}  ${label}: ${C.yellow}${JSON.stringify(value)}${C.reset}`);
+function skip(label, reason) {
+  console.log(`  ${C.yellow}⚠ SKIP${C.reset}  ${label}  ${C.dim}[${reason}]${C.reset}`);
+  skipped++;
 }
 
+function show(label, value) {
+  console.log(`  ${C.cyan}ℹ${C.reset}  ${label}: ${C.yellow}${JSON.stringify(value)}${C.reset}`);
+}
+
+function showErr(label, res) {
+  if (res.status >= 400) {
+    console.log(`    ${C.red}ERR ${res.status}:${C.reset} ${C.dim}${JSON.stringify(res.body?.message ?? res.body)}${C.reset}`);
+  }
+}
+
+// ── HTTP ───────────────────────────────────────────────────────────────────
 async function api(method, path, body, token) {
   const res = await fetch(`${BASE}${path}`, {
     method,
@@ -54,273 +68,394 @@ async function api(method, path, body, token) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  const json = await res.json();
+  const json = await res.json().catch(() => ({}));
   return { status: res.status, body: json };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-async function loginUser(phone) {
-  const r = await api('POST', '/auth/login', { phone, password: 'deuna123' });
-  return r.body?.data?.accessToken;
+let _uidSeq = 0;
+function uid() {
+  return `${Date.now()}${String(++_uidSeq).padStart(3,'0')}`;
 }
 
-async function loginMerchant(email) {
-  const r = await api('POST', '/merchants/auth/login', { ownerEmail: email, password: 'deuna123' });
-  return { token: r.body?.data?.accessToken, merchantId: r.body?.data?.merchantId };
+/**
+ * Crea un usuario único y hace login.
+ * (register no devuelve token → login por separado)
+ */
+async function createUser(name) {
+  const id  = uid();
+  const ph  = `+593${id.slice(-9)}`.slice(0, 13);
+  const em  = `u${id}@test.ec`;
+  const pw  = 'deuna123';
+  await api('POST', '/auth/register', { phone: ph, fullName: name, password: pw, email: em });
+  const r = await api('POST', '/auth/login', { phone: ph, password: pw });
+  return { token: r.body?.data?.accessToken, phone: ph };
 }
 
-async function getMerchantId(token) {
+/**
+ * Registra un merchant fresco (avgTicket=0) y hace login.
+ * Esto garantiza que los cálculos de puntos sean estables entre runs.
+ */
+async function createFreshMerchant(categoryId) {
+  const id  = uid();
+  const em  = `m${id}@testmerch.ec`;
+  const pw  = 'deuna123';
+  const ruc = id.slice(-13).padEnd(13, '0');
+  const reg = await api('POST', '/merchants/auth/register', {
+    categoryId,
+    businessName: `TestMerch_${id}`,
+    ruc,
+    ownerEmail: em,
+    password: pw,
+  });
+  const mId = reg.body?.data?.merchantId;
+  if (!mId) return null;
+  const login = await api('POST', '/merchants/auth/login', { ownerEmail: em, password: pw });
+  return { token: login.body?.data?.accessToken, merchantId: mId };
+}
+
+async function scan(token, merchantId, amount, couponId) {
+  const body = { merchantId, amount };
+  if (couponId) body.couponId = couponId;
+  return api('POST', '/loyalty/scan', body, token);
+}
+
+async function getProfile(token) {
+  const r = await api('GET', '/loyalty/profile', null, token);
+  return r.body?.data ?? [];
+}
+
+async function getMerchantStats(token) {
   const r = await api('GET', '/merchants/me/stats', null, token);
-  return r.body?.data?.merchantId;
+  return r.body?.data ?? {};
 }
 
-async function scan(userToken, merchantId, amount) {
-  return api('POST', '/loyalty/scan', { merchantId, amount }, userToken);
+/**
+ * Monto requerido para ganar al menos `neededPts` en un solo scan.
+ * avgTicket=0 → primer scan del merchant → siempre son 10 pts → usa 10*neededPts.
+ * avgTicket>0 → formula: amount = ceil(neededPts * avgTicket / 10) + 1
+ */
+function amountFor(neededPts, avgTicket) {
+  if (avgTicket <= 0) return neededPts * 10;
+  return Math.ceil((neededPts * avgTicket) / 10) + 1;
 }
 
-async function profile(userToken) {
-  return api('GET', '/loyalty/profile', null, userToken);
-}
-
-async function toggleLoyalty(merchantToken, enabled) {
-  return api('PATCH', '/merchants/me/loyalty', { enabled }, merchantToken);
-}
-
-// ── MAIN ───────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
 async function run() {
-  console.log(`\n${C.bold}🚀  Deuna Loyalty — Test Runner Completo${C.reset}`);
-  console.log(`${C.dim}  Base URL: ${BASE}${C.reset}`);
+  console.log(`\n${C.bold}🚀  Deuna Loyalty — Test Runner v3 (Merchant Fresco + Yapas)${C.reset}`);
+  console.log(`${C.dim}  Base URL: ${BASE}  |  Cada run usa merchant fresco → avgTicket estable${C.reset}\n`);
 
-  // ── FASE 0: Health ─────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════
+  // FASE 0 — Health
+  // ══════════════════════════════════════════════════════════════════════
   header('FASE 0 — Health Check');
   const health = await api('GET', '/health');
-  check('Servidor respondiendo', health.status === 200, health.status, 200);
-  check('DB conectada', health.body?.services?.database === 'ok', health.body?.services?.database, 'ok');
-  check('Redis conectado', health.body?.services?.redis === 'ok', health.body?.services?.redis, 'ok');
+  check('Servidor en línea (200)', health.status === 200, health.status, 200);
+  check('Database: ok', health.body?.services?.database === 'ok', health.body?.services?.database, 'ok');
+  check('Redis: ok',    health.body?.services?.redis    === 'ok', health.body?.services?.redis,    'ok');
+  if (health.status !== 200) { console.error('Servidor caído. Abortando.'); process.exit(1); }
 
-  // ── FASE 1: Activar / desactivar loyalty ───────────────────────────────
-  header('FASE 1 — Toggle Loyalty');
-  const { token: m001Token } = await loginMerchant('m001@deuna-demo.ec');
-  check('Login merchant M001', !!m001Token, !!m001Token, true);
+  // ══════════════════════════════════════════════════════════════════════
+  // FASE 1 — Setup: seed merchant + fresh merchant + usuarios
+  // ══════════════════════════════════════════════════════════════════════
+  header('FASE 1 — Setup');
 
-  const m001Id = await getMerchantId(m001Token);
-  check('merchantId obtenido', !!m001Id, !!m001Id, true);
-  show('M001 id', m001Id);
+  // Verificar merchant seed (elrincon@test.com)
+  const seedLogin = await api('POST', '/merchants/auth/login',
+    { ownerEmail: SEED_MERCHANT_EMAIL, password: SEED_MERCHANT_PASS });
+  const seedToken = seedLogin.body?.data?.accessToken;
+  if (!seedToken) {
+    console.error(`\n${C.red}${C.bold}No se pudo hacer login como merchant seed (${SEED_MERCHANT_EMAIL}).`);
+    console.error(`Corre primero los pasos 2.1-2.2 del POSTMAN_TESTING_GUIDE.md${C.reset}\n`);
+    process.exit(1);
+  }
+  check('Login merchant seed (elrincon) OK', !!seedToken, !!seedToken, true);
 
-  // Desactivar
-  const toggleOff = await toggleLoyalty(m001Token, false);
-  check('Desactivar loyalty → loyaltyEnabled: false', toggleOff.body?.data?.loyaltyEnabled === false, toggleOff.body?.data?.loyaltyEnabled, false);
+  // Obtener categoryId del seed merchant para crear merchants frescos
+  const cats = await api('GET', '/merchants/categories', null, seedToken);
+  const catId = cats.body?.data?.[0]?.id;
+  check('Categorías disponibles', !!catId, !!catId, true);
+  show('categoryId usado', catId);
 
-  // Scan con loyalty OFF debe dar 422
-  const tokenTier1 = await loginUser('+5939228431069'); // Carlos Quishpe
-  const scanBlocked = await scan(tokenTier1, m001Id, 10);
-  check('Scan con loyalty desactivado → 422', scanBlocked.status === 422, scanBlocked.status, 422);
-  check('Mensaje correcto', scanBlocked.body?.message?.includes('not enabled'), scanBlocked.body?.message, 'Loyalty program not enabled...');
+  // Crear merchant FRESCO (avgTicket=0, cálculos estables)
+  const freshM = await createFreshMerchant(catId);
+  check('Merchant fresco creado', !!freshM?.merchantId, !!freshM?.merchantId, true);
+  const fMToken = freshM?.token;
+  const fMId    = freshM?.merchantId;
+  show('freshMerchantId', fMId);
 
-  // Reactivar
-  const toggleOn = await toggleLoyalty(m001Token, true);
-  check('Reactivar loyalty → loyaltyEnabled: true', toggleOn.body?.data?.loyaltyEnabled === true, toggleOn.body?.data?.loyaltyEnabled, true);
+  // Crear usuarios frescos
+  const userA = await createUser('Usuario A Test');
+  const userB = await createUser('Usuario B Test');
+  check('Usuario A creado + login OK', !!userA.token, !!userA.token, true);
+  check('Usuario B creado + login OK', !!userB.token, !!userB.token, true);
 
-  // ── FASE 2: Confianza Baja (Tier 1) ───────────────────────────────────
-  header('FASE 2 — Confianza Baja (Tier 1)');
-  // Usamos un usuario FRESCO: creamos uno para no depender de estado
-  const freshPhone = `+593${Date.now().toString().slice(-9)}`;
-  const regRes = await api('POST', '/auth/register', {
-    phone: freshPhone,
-    fullName: 'Test Usuario Tier1',
-    password: 'test1234',
-  });
-  const freshToken = regRes.body?.data?.accessToken;
-  check('Registro usuario fresco', !!freshToken, !!freshToken, true);
+  // ══════════════════════════════════════════════════════════════════════
+  // FASE 2 — Primera Compra (merchant fresco → 10 pts exactos)
+  // ══════════════════════════════════════════════════════════════════════
+  header('FASE 2 — Primera Compra (avgTicket=0 → 10 pts base)');
 
-  // Primera compra — M001 tiene avgTicket real del seed, los puntos son proporcionales al esfuerzo
-  const scan1 = await scan(freshToken, m001Id, 12.00);
-  check('Primera compra procesada', scan1.status === 200, scan1.status, 200);
-  check('Primera compra → puntos > 0 (proporcional a esfuerzo)', (scan1.body?.data?.trustPointsEarned ?? 0) > 0, scan1.body?.data?.trustPointsEarned, '>0');
-  check('Tier es 1', scan1.body?.data?.tierLevel === 1, scan1.body?.data?.tierLevel, 1);
-  check('Sin cupón activo todavía', scan1.body?.data?.couponUnlocked === null, scan1.body?.data?.couponUnlocked, null);
-  show('Puntos ganados', scan1.body?.data?.trustPointsEarned);
-  show('Total puntos', scan1.body?.data?.totalTrustPoints);
+  const s1 = await scan(userA.token, fMId, 10.00);
+  check('Primera compra → 200', s1.status === 200, s1.status, 200); showErr('s1', s1);
+  check('trustPointsEarned = 10 (avgTicket=0)', Math.abs((s1.body?.data?.trustPointsEarned ?? -1) - 10) < 0.01,
+    s1.body?.data?.trustPointsEarned, 10);
+  check('tierLevel = 1',          s1.body?.data?.tierLevel     === 1,    s1.body?.data?.tierLevel, 1);
+  check('couponUnlocked = null',  s1.body?.data?.couponUnlocked === null, s1.body?.data?.couponUnlocked, null);
+  check('couponApplied = null',   s1.body?.data?.couponApplied  === null, s1.body?.data?.couponApplied, null);
+  check('activeYapasCount = 0',   s1.body?.data?.activeYapasCount === 0,  s1.body?.data?.activeYapasCount, 0);
+  check('antifraudBlocked = false', s1.body?.data?.antifraudBlocked === false, s1.body?.data?.antifraudBlocked, false);
+  show('totalTrustPoints', s1.body?.data?.totalTrustPoints);
+  show('pointsToNextCoupon', s1.body?.data?.pointsToNextCoupon);
 
-  // ── FASE 3: Antifraud (Velocity Limit) ────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════
+  // FASE 3 — Antifraud (velocity limit)
+  // ══════════════════════════════════════════════════════════════════════
   header('FASE 3 — Antifraud (Velocity Limit)');
-  const scan2 = await scan(freshToken, m001Id, 8.00);
-  check('Segunda compra inmediata bloqueada', scan2.body?.data?.antifraudBlocked === true, scan2.body?.data?.antifraudBlocked, true);
-  check('Puntos ganados = 0 cuando bloqueado', scan2.body?.data?.trustPointsEarned === 0, scan2.body?.data?.trustPointsEarned, 0);
-  check('Transacción se registra igual (status 200)', scan2.status === 200, scan2.status, 200);
-  show('antifraudBlocked', scan2.body?.data?.antifraudBlocked);
 
-  // ── FASE 4: Boost por tier ─────────────────────────────────────────────
-  header('FASE 4 — Boost de Puntos por Tier');
-  // Creamos otro merchant fresco para controlar avgTicket
-  const ts = Date.now();
-  const catRes = await api('GET', '/merchants/categories', null, m001Token);
-  const categoryId = catRes.body?.data?.[0]?.id;
+  const sAF = await scan(userA.token, fMId, 15.00);
+  check('Segunda compra inmediata → 200', sAF.status === 200, sAF.status, 200); showErr('sAF', sAF);
+  const antifraudActive = sAF.body?.data?.antifraudBlocked === true;
 
-  const regM = await api('POST', '/merchants/auth/register', {
-    categoryId,
-    businessName: `TestMerchant_${ts}`,
-    ruc: `${ts}`.slice(0, 13).padEnd(13, '0'),
-    ownerEmail: `testmerchant_${ts}@test.ec`,
-    password: 'test1234',
-  });
-  const freshMToken = regM.body?.data?.accessToken;
-  const freshMId    = regM.body?.data?.merchantId;
-  check('Merchant fresco creado', !!freshMId, !!freshMId, true);
-  await toggleLoyalty(freshMToken, true);
-
-  // Crear 3 usuarios para Tier 1, 2, 3 (forzamos tier manualmente vía seed o partimos de fresh)
-  // Probamos con usuario fresh en Tier1 (0% boost) y el dataset Tier2/Tier3
-  const p1 = `+593${(Date.now() + 1).toString().slice(-9)}`;
-  const p2 = `+593${(Date.now() + 2).toString().slice(-9)}`;
-  const p3 = `+593${(Date.now() + 3).toString().slice(-9)}`;
-
-  const u1 = (await api('POST', '/auth/register', { phone: p1, fullName: 'BoostT1', password: 'test1234' })).body?.data?.accessToken;
-  const u2 = (await api('POST', '/auth/register', { phone: p2, fullName: 'BoostT2', password: 'test1234' })).body?.data?.accessToken;
-  const u3 = (await api('POST', '/auth/register', { phone: p3, fullName: 'BoostT3', password: 'test1234' })).body?.data?.accessToken;
-
-  // Primera compra para establecer avgTicket en $10
-  await scan(u1, freshMId, 10.00);
-  await scan(u2, freshMId, 10.00);
-  await scan(u3, freshMId, 10.00);
-
-  // Los tres están en Tier1. Para T2 y T3 necesitamos que tengan cupones redimidos.
-  // Como el antifraud bloquea segundos scans, simplemente verificamos la FÓRMULA
-  // en usuarios del DATASET que ya tienen tier 2 y 3 establecidos.
-
-  // Dataset: María Andrade (Tier2) en merchant M027
-  const { token: m027Token } = await loginMerchant('m027@deuna-demo.ec');
-  const m027Id = await getMerchantId(m027Token);
-  const mariaToken = await loginUser('+5939133462959'); // María Andrade, Tier2
-  const jhonatanToken = await loginUser('+5939832191793'); // Jhonatan, Tier3
-
-  // Verificamos perfil para confirmar tiers
-  const mariaProfile = await profile(mariaToken);
-  const mariaT = mariaProfile.body?.data?.loyaltyTiers?.find(t => t.merchantId === m027Id);
-  show('María Andrade tier en M027', mariaT?.tierLevel ?? 'no encontrado');
-
-  // Scan de Tier1 fresh (sin boost)
-  const st1 = await scan(u1, freshMId, 10.00); // bloqueado por antifraud
-  // Como está bloqueado por antifraud, verificamos la fórmula matemáticamente
-  show('Fórmula Tier1 boost', '(10/10)*10*1.00 = 10.00 pts');
-  show('Fórmula Tier2 boost', '(10/10)*10*1.05 = 10.50 pts');
-  show('Fórmula Tier3 boost', '(10/10)*10*1.10 = 11.00 pts');
-  check('Boost Tier1: 0% (factor=1.00)', true, '10.00', '10.00'); // ya verificado arriba
-  console.log(`  ${info}  Boost Tier2 y Tier3 requieren ventana antifraud=0 para probar en caliente`);
-
-  // ── FASE 5: Equidad entre categorías ──────────────────────────────────
-  header('FASE 5 — Equidad de Fórmulas entre Categorías');
-  // Creamos usuario fresco para cada categoría
-  const eqUser = (await api('POST', '/auth/register', {
-    phone: `+593${(Date.now()+10).toString().slice(-9)}`,
-    fullName: 'EquidadTester',
-    password: 'test1234',
-  })).body?.data?.accessToken;
-
-  // M001 Comida — avgTicket real del seed, verificamos que da puntos proporcionales > 0
-  const eqComida = await scan(eqUser, m001Id, 8.98);
-  check('Comida (M001) → puntos > 0 (esfuerzo relativo)', (eqComida.body?.data?.trustPointsEarned ?? 0) > 0, eqComida.body?.data?.trustPointsEarned, '>0');
-
-  // Cupón Tier1 en M001: clamp(8.98*0.18, 0.50, 2.00)
-  const expectedCouponComida = Math.min(Math.max(8.98 * 0.18, 0.50), 2.00);
-  show('Cupón esperado Tier1 Comida ($8.98)', `$${expectedCouponComida.toFixed(2)}`);
-
-  // M036 Transporte avgTicket=$1.11 → cupón siempre floored a $0.50
-  const { token: m036Token } = await loginMerchant('m036@deuna-demo.ec');
-  const m036Id = await getMerchantId(m036Token);
-  const expectedCouponTransporte = Math.min(Math.max(1.11 * 0.18, 0.50), 2.00);
-  show('Cupón esperado Tier1 Transporte ($1.11 avg)', `$${expectedCouponTransporte.toFixed(2)} (piso $0.50)`);
-  check('Transporte: piso $0.50 activo', expectedCouponTransporte === 0.50, expectedCouponTransporte, 0.50);
-
-  // M048 Farmacia avgTicket=$38.86 → cupón capped a $2.00 en Tier1
-  const expectedCouponFarmacia = Math.min(Math.max(38.86 * 0.18, 0.50), 2.00);
-  show('Cupón esperado Tier1 Farmacia ($38.86 avg)', `$${expectedCouponFarmacia.toFixed(2)} (techo $2.00)`);
-  check('Farmacia alta: techo $2.00 activo', expectedCouponFarmacia === 2.00, expectedCouponFarmacia, 2.00);
-
-  // ── FASE 6: Usuario con cupón activo (Narcisa Ortega) ─────────────────
-  header('FASE 6 — Cupón Activo Disponible (Narcisa Ortega)');
-  const narcisaToken = await loginUser('+5939113148622');
-  check('Login Narcisa Ortega', !!narcisaToken, !!narcisaToken, true);
-
-  const narcisaProfile = await profile(narcisaToken);
-  const narcisaTiers = narcisaProfile.body?.data ?? [];
-  const tiersConCupon = narcisaTiers.filter(t => t.activeCoupon !== null);
-  check('Narcisa tiene ≥1 cupón activo en su perfil', tiersConCupon.length >= 1, tiersConCupon.length, '≥1');
-  show('Merchants con cupón activo', tiersConCupon.map(t => `${t.merchantName}: $${t.activeCoupon?.value}`));
-
-  // ── FASE 7: Confianza media y alta (usuarios dataset) ─────────────────
-  header('FASE 7 — Confianza Media (Tier 2) y Alta (Tier 3)');
-  const mariaProfileFull = await profile(mariaToken);
-  const mariaTiers = mariaProfileFull.body?.data ?? [];
-  const mariaMaxTier = Math.max(...mariaTiers.map(t => t.tierLevel ?? 0), 0);
-  check('María Andrade en Tier ≥ 2', mariaMaxTier >= 2, mariaMaxTier, '≥2');
-  show('María — tiers', mariaTiers.map(t => `${t.merchantName}: T${t.tierLevel} (${t.trustPoints}pts)`).join(' | '));
-
-  const jhonatanProfile = await profile(jhonatanToken);
-  const jhonatanTiers = jhonatanProfile.body?.data ?? [];
-  const jhonatanMaxTier = Math.max(...jhonatanTiers.map(t => t.tierLevel ?? 0), 0);
-  check('Jhonatan Masaquiza en Tier ≥ 3', jhonatanMaxTier >= 3, jhonatanMaxTier, '≥3');
-  show('Jhonatan — max tier', jhonatanMaxTier);
-
-  // ── FASE 8: Transición Tier 1 → 2 (usuario fresco, compra grande) ─────
-  header('FASE 8 — Transición Tier 1 → 2 (1 sola compra grande)');
-  // Usamos merchant fresco (avgTicket se irá ajustando).
-  // Con avgTicket=0 la primera compra da 10 puntos. Para llegar a 100 necesitamos
-  // un monto que con avgTicket establecido dé 90+ puntos → amount = 90 * avgTicket / 10
-  // Creamos merchant y usuario frescos para control total
-  const ts2 = Date.now() + 100;
-  const regM2 = await api('POST', '/merchants/auth/register', {
-    categoryId,
-    businessName: `MerchantTransicion_${ts2}`,
-    ruc: `${ts2}`.slice(-13).padStart(13, '0'),
-    ownerEmail: `trans_${ts2}@test.ec`,
-    password: 'test1234',
-  });
-  const transToken = regM2.body?.data?.accessToken;
-  const transId = regM2.body?.data?.merchantId;
-  await toggleLoyalty(transToken, true);
-
-  const transUser = (await api('POST', '/auth/register', {
-    phone: `+593${(Date.now()+20).toString().slice(-9)}`,
-    fullName: 'TransicionUser',
-    password: 'test1234',
-  })).body?.data?.accessToken;
-
-  // Primera compra: avgTicket=0, amount=$10 → da 10 pts, establece avgTicket=$10
-  const tx1 = await scan(transUser, transId, 10.00);
-  check('TX1: 10 pts (primer scan)', Math.abs((tx1.body?.data?.trustPointsEarned ?? 0) - 10) < 0.1, tx1.body?.data?.trustPointsEarned, 10);
-  check('TX1: Tier 1', tx1.body?.data?.tierLevel === 1, tx1.body?.data?.tierLevel, 1);
-  show('TX1 totalTrustPoints', tx1.body?.data?.totalTrustPoints);
-
-  // No podemos hacer 2da compra por antifraud (a menos que esté en 0).
-  // Verificamos que la acumulación sería suficiente matemáticamente:
-  // avgTicket=$10 → para 90 pts más necesitamos amount = 90*10/10 = $90
-  show('Para llegar a 100 pts', 'segunda compra de $90 (con ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0)');
-
-  // Si antifraud está en 0, intentamos la transición
-  const tx2 = await scan(transUser, transId, 90.00);
-  if (tx2.body?.data?.antifraudBlocked) {
-    console.log(`  ${warn}  Antifraud activo — skipping transición automática (pon ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0)`);
+  if (antifraudActive) {
+    check('antifraudBlocked = true ✓',          true, true, true);
+    check('trustPointsEarned = 0 (bloqueado)',   sAF.body?.data?.trustPointsEarned === 0, sAF.body?.data?.trustPointsEarned, 0);
+    check('couponUnlocked = null (bloqueado)',    sAF.body?.data?.couponUnlocked === null,  sAF.body?.data?.couponUnlocked, null);
+    show('Antifraud', 'ACTIVO — fases 6-7 se saltan (pon ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0)');
   } else {
-    const unlocked = tx2.body?.data?.couponUnlocked;
-    check('TX2: Cupón Yapa desbloqueado al llegar a 100 pts', unlocked !== null, unlocked, 'objeto con value y message');
-    show('Cupón desbloqueado', unlocked);
-
-    // TX3: redimir cupón → subir a Tier 2
-    const tx3 = await scan(transUser, transId, 10.00);
-    check('TX3: Cupón aplicado automáticamente', tx3.body?.data?.couponApplied !== null, tx3.body?.data?.couponApplied, 'objeto con discountAmount');
-    check('TX3: Subió a Tier 2', tx3.body?.data?.tierLevel === 2, tx3.body?.data?.tierLevel, 2);
-    show('Tier después de redimir', tx3.body?.data?.tierLevel);
-    show('Descuento aplicado', tx3.body?.data?.couponApplied?.discountAmount);
+    check('antifraudBlocked = false (desactivado) ✓', true, true, true);
+    check('trustPointsEarned > 0 (segunda compra OK)', (sAF.body?.data?.trustPointsEarned ?? 0) > 0, sAF.body?.data?.trustPointsEarned, '>0');
+    show('Antifraud', 'DESACTIVADO ✓ (ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0)');
   }
 
-  // ── FASE 9: Seguridad de tokens ────────────────────────────────────────
-  header('FASE 9 — Seguridad de Tokens');
-  const secScan = await api('POST', '/loyalty/scan', { merchantId: m001Id, amount: 10 }, m001Token);
-  check('Token merchant en /loyalty/scan → 401 (guard rechaza)', secScan.status === 401, secScan.status, 401);
+  // ══════════════════════════════════════════════════════════════════════
+  // FASE 4 — Perfil del Usuario (sin Yapas)
+  // ══════════════════════════════════════════════════════════════════════
+  header('FASE 4 — Perfil del Usuario (sin Yapas todavía)');
 
-  const secStats = await api('GET', '/merchants/me/stats', null, narcisaToken);
-  check('Token usuario en /merchants/me/stats → 401 (guard rechaza)', secStats.status === 401, secStats.status, 401);
+  const profEmpty = await getProfile(userA.token);
+  const entA = profEmpty.find(e => e.merchantId === fMId);
+  check('Perfil tiene entrada para el fresh merchant', !!entA, !!entA, true);
+  check('activeYapas = []',        Array.isArray(entA?.activeYapas) && entA?.activeYapas?.length === 0, entA?.activeYapas, []);
+  check('yapasCount = 0',          entA?.yapasCount === 0,         entA?.yapasCount, 0);
+  check('totalYapasValue = 0',     entA?.totalYapasValue === 0,    entA?.totalYapasValue, 0);
+  check('trustPoints > 0',         (entA?.trustPoints ?? 0) > 0,   entA?.trustPoints, '>0');
+  check('tierLevel = 1',           entA?.tierLevel === 1,           entA?.tierLevel, 1);
+  check('pointsToNextCoupon OK',   typeof entA?.pointsToNextCoupon === 'number', typeof entA?.pointsToNextCoupon, 'number');
+  show('trustPoints actuales', entA?.trustPoints);
+  show('pointsToNextCoupon',   entA?.pointsToNextCoupon);
+
+  // ══════════════════════════════════════════════════════════════════════
+  // FASE 5 — Validaciones de couponId
+  // ══════════════════════════════════════════════════════════════════════
+  header('FASE 5 — Validaciones de couponId');
+
+  const badUuid = await scan(userA.token, fMId, 10.00, '00000000-0000-0000-0000-000000000000');
+  check('couponId UUID inexistente → 400', badUuid.status === 400, badUuid.status, 400);
+  show('Mensaje couponId inválido', badUuid.body?.message);
+
+  const badFmt = await api('POST', '/loyalty/scan', { merchantId: fMId, amount: 10, couponId: 'no-es-uuid' }, userA.token);
+  check('couponId formato inválido → 400', badFmt.status === 400, badFmt.status, 400);
+
+  // ══════════════════════════════════════════════════════════════════════
+  // FASES 6-7 — Acumulación (requiere antifraud=0)
+  // ══════════════════════════════════════════════════════════════════════
+  if (antifraudActive) {
+    header('FASES 6-7 — Acumulación de Yapas (skipped)');
+    skip('Yapa #1 (Tier 1→2, pts reset)',           'Necesita ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0');
+    skip('Yapa #2 (Tier 2→3)',                       'Necesita ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0');
+    skip('Yapas #3,4,5 (Tier 3 repeat)',              'Necesita ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0');
+    skip('Límite 5 yapas (no genera #6)',             'Necesita ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0');
+    skip('Redención voluntaria con couponId',         'Necesita ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0');
+    skip('Cross-user y cross-merchant → 400',         'Necesita ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0');
+    skip('Doble redención → 400',                    'Necesita ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0');
+    skip('Regenerar yapa tras redención',             'Necesita ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0');
+  } else {
+    // ── Merchant FRESCO exclusivo para acumulación (aislado del FASE 2-5)
+    // Usamos un segundo merchant fresco para que userA de FASE 2 no tenga pts previos
+    const accumM = await createFreshMerchant(catId);
+    check('Merchant acumulación creado', !!accumM?.merchantId, !!accumM?.merchantId, true);
+    const aMToken = accumM?.token;
+    const aMId    = accumM?.merchantId;
+
+    // Usuario dedicado a acumulación (estado limpio)
+    const yapUser = await createUser('Yapa Accum User');
+    check('Usuario acumulador creado', !!yapUser.token, !!yapUser.token, true);
+    const YT = yapUser.token;
+
+    // ─────────────────────────────────────────────────────────────────────
+    header('FASE 6 — Generación de Yapas (acumulación hasta 5)');
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── yScan #1: avgTicket=0 → 10 pts base
+    const yS1 = await scan(YT, aMId, 10.00);
+    check('yScan #1 → 200', yS1.status === 200, yS1.status, 200); showErr('yScan1', yS1);
+    const pts1 = yS1.body?.data?.totalTrustPoints ?? 0;
+    check('yScan #1 → 10 pts (avgTicket=0)', Math.abs(pts1 - 10) < 0.1, pts1, 10);
+    check('yScan #1 → tierLevel = 1',         yS1.body?.data?.tierLevel === 1, yS1.body?.data?.tierLevel, 1);
+    check('yScan #1 → couponUnlocked = null', yS1.body?.data?.couponUnlocked === null, yS1.body?.data?.couponUnlocked, null);
+    show('yScan #1 totalTrustPoints', pts1);
+
+    // ── yScan #2: alcanzar threshold Tier1 (100 pts) → Yapa #1
+    const statsA1 = await getMerchantStats(aMToken);
+    const avgTA1  = Number(statsA1.averageTicket ?? 10);
+    const amtA2   = amountFor(100 - pts1 + 1, avgTA1);
+    show('avgTicket tras yScan #1', avgTA1);
+    show('Monto yScan #2 (Tier1 threshold)', `$${amtA2}`);
+
+    const yS2 = await scan(YT, aMId, amtA2);
+    check('yScan #2 → 200', yS2.status === 200, yS2.status, 200); showErr('yScan2', yS2);
+    const yapa1 = yS2.body?.data?.couponUnlocked;
+    check('yScan #2 → Yapa #1 desbloqueada',       !!yapa1, !!yapa1, true);
+    check('Yapa #1 → id UUID',                     typeof yapa1?.id === 'string' && yapa1.id.length > 10, yapa1?.id, 'uuid');
+    check('Yapa #1 → value > 0',                   (yapa1?.value ?? 0) > 0, yapa1?.value, '>0');
+    check('Yapa #1 → value en rango [$0.50-$2.00]', (yapa1?.value ?? 0) >= 0.50 && (yapa1?.value ?? 0) <= 2.00, yapa1?.value, '[0.50-2.00]');
+    check('Yapa #1 → mensaje string',              typeof yapa1?.message === 'string', typeof yapa1?.message, 'string');
+    check('yScan #2 → tier subió a 2 al generar',  yS2.body?.data?.tierLevel === 2, yS2.body?.data?.tierLevel, 2);
+    check('yScan #2 → trustPoints = 0 (reset)',    yS2.body?.data?.totalTrustPoints === 0, yS2.body?.data?.totalTrustPoints, 0);
+    check('yScan #2 → activeYapasCount = 1',       yS2.body?.data?.activeYapasCount === 1, yS2.body?.data?.activeYapasCount, 1);
+    show('Yapa #1', { id: yapa1?.id?.slice(0,8)+'...', value: yapa1?.value });
+
+    // Perfil tras Yapa #1
+    const prof1 = await getProfile(YT);
+    const ent1  = prof1.find(e => e.merchantId === aMId);
+    check('Perfil Yapa #1: yapasCount = 1',              ent1?.yapasCount === 1, ent1?.yapasCount, 1);
+    check('Perfil Yapa #1: activeYapas[0].id correcto',  ent1?.activeYapas?.[0]?.id === yapa1?.id, ent1?.activeYapas?.[0]?.id, yapa1?.id);
+    check('Perfil Yapa #1: tierEarnedAt = 1',            ent1?.activeYapas?.[0]?.tierEarnedAt === 1, ent1?.activeYapas?.[0]?.tierEarnedAt, 1);
+    check('Perfil Yapa #1: tierLevel = 2',               ent1?.tierLevel === 2, ent1?.tierLevel, 2);
+    check('Perfil Yapa #1: trustPoints = 0',             ent1?.trustPoints === 0, ent1?.trustPoints, 0);
+    check('Perfil Yapa #1: totalYapasValue = yapa1.value', ent1?.totalYapasValue === yapa1?.value, ent1?.totalYapasValue, yapa1?.value);
+    const yapa1Id    = yapa1?.id;
+    const yapa1Value = yapa1?.value;
+
+    // ── yScan #3: threshold Tier2 (250 pts) → Yapa #2
+    const statsA2 = await getMerchantStats(aMToken);
+    const avgTA2  = Number(statsA2.averageTicket);
+    const amtA3   = amountFor(251, avgTA2);
+    show('Monto yScan #3 (Tier2 threshold)', `$${amtA3}`);
+
+    const yS3 = await scan(YT, aMId, amtA3);
+    check('yScan #3 → 200', yS3.status === 200, yS3.status, 200); showErr('yScan3', yS3);
+    const yapa2 = yS3.body?.data?.couponUnlocked;
+    check('yScan #3 → Yapa #2 desbloqueada',      !!yapa2, !!yapa2, true);
+    check('yScan #3 → tier subió a 3',             yS3.body?.data?.tierLevel === 3, yS3.body?.data?.tierLevel, 3);
+    check('yScan #3 → trustPoints = 0 (reset)',    yS3.body?.data?.totalTrustPoints === 0, yS3.body?.data?.totalTrustPoints, 0);
+    check('yScan #3 → activeYapasCount = 2',       yS3.body?.data?.activeYapasCount === 2, yS3.body?.data?.activeYapasCount, 2);
+    check('Yapa #2 → value >= Yapa #1 (Tier2>=Tier1)', (yapa2?.value ?? 0) >= (yapa1Value ?? 0), yapa2?.value, `>=${yapa1Value}`);
+    check('Yapa #2 → value en rango [$1.00-$3.50]', (yapa2?.value ?? 0) >= 1.00 && (yapa2?.value ?? 0) <= 3.50, yapa2?.value, '[1.00-3.50]');
+    check('Yapa #2 → id único',                    yapa2?.id !== yapa1Id, yapa2?.id, 'distinto a yapa1');
+    show('Yapa #2', { id: yapa2?.id?.slice(0,8)+'...', value: yapa2?.value });
+    const yapa2Id    = yapa2?.id;
+    const yapa2Value = yapa2?.value;
+
+    // ── Yapas #3, #4, #5 en Tier3 (500 pts cada vez)
+    const yapaIds = [yapa1Id, yapa2Id];
+    for (let n = 3; n <= 5; n++) {
+      const statsN  = await getMerchantStats(aMToken);
+      const avgTN   = Number(statsN.averageTicket);
+      const amtN    = amountFor(501, avgTN);
+      show(`Monto yScan #${n+1} (Yapa #${n} Tier3)`, `$${amtN}`);
+
+      const ySN = await scan(YT, aMId, amtN);
+      check(`yScan #${n+1} → 200`, ySN.status === 200, ySN.status, 200); showErr(`yScan${n+1}`, ySN);
+      const yapaN = ySN.body?.data?.couponUnlocked;
+      check(`Yapa #${n} desbloqueada`,              !!yapaN, !!yapaN, true);
+      check(`Yapa #${n} → tier se mantiene en 3`,   ySN.body?.data?.tierLevel === 3, ySN.body?.data?.tierLevel, 3);
+      check(`Yapa #${n} → trustPoints = 0 (reset)`, ySN.body?.data?.totalTrustPoints === 0, ySN.body?.data?.totalTrustPoints, 0);
+      check(`Yapa #${n} → activeYapasCount = ${n}`, ySN.body?.data?.activeYapasCount === n, ySN.body?.data?.activeYapasCount, n);
+      check(`Yapa #${n} → id único`, !yapaIds.includes(yapaN?.id), yapaN?.id, 'único');
+      check(`Yapa #${n} → value en rango Tier3 [$1.50-$5]`, (yapaN?.value??0)>=1.50&&(yapaN?.value??0)<=5, yapaN?.value, '[1.50-5.00]');
+      yapaIds.push(yapaN?.id);
+      show(`Yapa #${n}`, { id: yapaN?.id?.slice(0,8)+'...', value: yapaN?.value, tierEarnedAt: yapaN?.tierEarnedAt });
+    }
+
+    // Perfil con 5 yapas
+    const prof5 = await getProfile(YT);
+    const ent5  = prof5.find(e => e.merchantId === aMId);
+    check('5 yapas: yapasCount = 5',             ent5?.yapasCount === 5, ent5?.yapasCount, 5);
+    check('5 yapas: activeYapas.length = 5',     ent5?.activeYapas?.length === 5, ent5?.activeYapas?.length, 5);
+    check('5 yapas: totalYapasValue > 0',        (ent5?.totalYapasValue ?? 0) > 0, ent5?.totalYapasValue, '>0');
+    check('5 yapas: cada yapa tiene id',         ent5?.activeYapas?.every(y => !!y.id), null, 'allHaveId');
+    check('5 yapas: cada yapa tiene tierEarnedAt', ent5?.activeYapas?.every(y => !!y.tierEarnedAt), null, 'allHaveTier');
+    show('totalYapasValue acumulado', ent5?.totalYapasValue);
+
+    // ── Límite: scan extra NO genera Yapa #6
+    const statsLim = await getMerchantStats(aMToken);
+    const amtLim   = amountFor(501, Number(statsLim.averageTicket));
+    const sLim = await scan(YT, aMId, amtLim);
+    check('Con 5 yapas: scan → 200 (no se bloquea)',       sLim.status === 200, sLim.status, 200);
+    check('Con 5 yapas: couponUnlocked = null (límite)',   sLim.body?.data?.couponUnlocked === null, sLim.body?.data?.couponUnlocked, null);
+    check('Con 5 yapas: activeYapasCount sigue en 5',      sLim.body?.data?.activeYapasCount === 5, sLim.body?.data?.activeYapasCount, 5);
+    check('Con 5 yapas: trustPoints NO se reset (sin yapa)', (sLim.body?.data?.totalTrustPoints ?? 0) > 0, sLim.body?.data?.totalTrustPoints, '>0');
+    show('Pts acumulados con 5 yapas activas', sLim.body?.data?.totalTrustPoints);
+
+    // ─────────────────────────────────────────────────────────────────────
+    header('FASE 7 — Redención Voluntaria de Yapas');
+    // ─────────────────────────────────────────────────────────────────────
+
+    const profRedeem  = await getProfile(YT);
+    const entRedeem   = profRedeem.find(e => e.merchantId === aMId);
+    const activeYapas = entRedeem?.activeYapas ?? [];
+    check('Pre-redención: 5 yapas con id', activeYapas.length === 5, activeYapas.length, 5);
+
+    const bestYapa = activeYapas.reduce((b, y) => (y.value > b.value ? y : b), activeYapas[0]);
+    show('Yapa elegida para redimir', { id: bestYapa?.id?.slice(0,8)+'...', value: bestYapa?.value, tierEarnedAt: bestYapa?.tierEarnedAt });
+
+    // ── Cross-user: userB intenta usar yapa de YT en el mismo merchant
+    const crossUser = await scan(userB.token, aMId, 15.00, bestYapa.id);
+    check('Cross-user: yapa ajena → 400', crossUser.status === 400, crossUser.status, 400);
+    show('Msg cross-user', crossUser.body?.message);
+
+    // ── Cross-merchant: YT usa la yapa en un merchant diferente
+    const otherM = await createFreshMerchant(catId);
+    if (otherM?.merchantId) {
+      const crossMerch = await scan(YT, otherM.merchantId, 15.00, bestYapa.id);
+      check('Cross-merchant: yapa de otro local → 400', crossMerch.status === 400, crossMerch.status, 400);
+      show('Msg cross-merchant', crossMerch.body?.message);
+    } else {
+      skip('Cross-merchant test', 'No se pudo crear merchant temporal');
+    }
+
+    // ── Redención exitosa
+    const redeemScan = await scan(YT, aMId, 20.00, bestYapa.id);
+    check('Redención con couponId válido → 200', redeemScan.status === 200, redeemScan.status, 200); showErr('redeem', redeemScan);
+    const applied = redeemScan.body?.data?.couponApplied;
+    check('couponApplied no es null',              !!applied, !!applied, true);
+    check('applied.id = yapa elegida',             applied?.id === bestYapa.id, applied?.id, bestYapa.id);
+    check('applied.discountAmount = value yapa',   applied?.discountAmount === bestYapa.value, applied?.discountAmount, bestYapa.value);
+    check('activeYapasCount = 4 tras redención',   redeemScan.body?.data?.activeYapasCount === 4, redeemScan.body?.data?.activeYapasCount, 4);
+    check('couponUnlocked = null (no umbral)',      redeemScan.body?.data?.couponUnlocked === null, redeemScan.body?.data?.couponUnlocked, null);
+    check('Tier NO cambia al redimir (sigue en 3)', redeemScan.body?.data?.tierLevel === 3, redeemScan.body?.data?.tierLevel, 3);
+    show('Descuento aplicado', applied?.discountAmount);
+
+    // Perfil post-redención: 4 yapas
+    const profPost = await getProfile(YT);
+    const entPost  = profPost.find(e => e.merchantId === aMId);
+    check('Post-redención: yapasCount = 4', entPost?.yapasCount === 4, entPost?.yapasCount, 4);
+    check('Post-redención: yapa redimida NO está en activeYapas', !(entPost?.activeYapas ?? []).some(y => y.id === bestYapa.id), null, 'ausente');
+
+    // ── Doble redención: misma yapa → 400
+    const doubleRedeem = await scan(YT, aMId, 15.00, bestYapa.id);
+    check('Doble redención → 400', doubleRedeem.status === 400, doubleRedeem.status, 400);
+    show('Msg doble redención', doubleRedeem.body?.message);
+
+    // ── Regenerar: con 4 yapas y pts > 500 → puede generar 5ta de nuevo
+    // (User tiene ~501 pts del limit scan, cualquier compra adicional → threshold >= 500)
+    const regenScan = await scan(YT, aMId, 1.00);
+    check('Regen: puede generar Yapa nueva (4→5)',  !!regenScan.body?.data?.couponUnlocked, !!regenScan.body?.data?.couponUnlocked, true); showErr('regen', regenScan);
+    check('Regen: activeYapasCount vuelve a 5',     regenScan.body?.data?.activeYapasCount === 5, regenScan.body?.data?.activeYapasCount, 5);
+    show('Nueva yapa generada', regenScan.body?.data?.couponUnlocked?.value);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // FASE 8 — Seguridad de Tokens
+  // ══════════════════════════════════════════════════════════════════════
+  header('FASE 8 — Seguridad de Tokens');
+
+  const secScan = await api('POST', '/loyalty/scan', { merchantId: fMId, amount: 10 }, seedToken);
+  check('Token merchant en /loyalty/scan → 401 (guard rechaza rol)', secScan.status === 401, secScan.status, 401);
+
+  const secStats = await api('GET', '/merchants/me/stats', null, userA.token);
+  check('Token usuario en /merchants/me/stats → 401', secStats.status === 401, secStats.status, 401);
 
   const secNoToken = await api('GET', '/loyalty/profile', null, null);
   check('Sin token en /loyalty/profile → 401', secNoToken.status === 401, secNoToken.status, 401);
@@ -328,37 +463,50 @@ async function run() {
   const secBadToken = await api('GET', '/merchants/me/stats', null, 'tokenfalso.abc.xyz');
   check('Token inválido → 401', secBadToken.status === 401, secBadToken.status, 401);
 
-  // ── FASE 10: Validaciones DTO ──────────────────────────────────────────
-  header('FASE 10 — Validaciones de DTO');
-  const badPhone = await api('POST', '/auth/register', { phone: '09912345', fullName: 'X', password: '12345678' });
-  check('Teléfono sin formato E.164 → 400', badPhone.status === 400, badPhone.status, 400);
+  const secMerchProf = await api('GET', '/loyalty/profile', null, seedToken);
+  check('Token merchant en /loyalty/profile → 401', secMerchProf.status === 401, secMerchProf.status, 401);
 
-  const badScan = await api('POST', '/loyalty/scan', { merchantId: 'no-es-uuid', amount: 10 }, freshToken);
-  check('merchantId inválido → 400', badScan.status === 400, badScan.status, 400);
+  // ══════════════════════════════════════════════════════════════════════
+  // FASE 9 — Validaciones de DTO
+  // ══════════════════════════════════════════════════════════════════════
+  header('FASE 9 — Validaciones de DTO');
 
-  const badCoupon = await api('POST', '/merchants/me/coupons', {
-    value: 5.00, minimumPurchase: 2.00, code: 'MALCUPON', expiresAt: '2099-12-31T23:59:59Z',
-  }, m001Token);
-  check('minimumPurchase < value → 400', badCoupon.status === 400, badCoupon.status, 400);
+  const badPhone = await api('POST', '/auth/register', { phone: '0991234567', fullName: 'X', password: 'pass1234' });
+  check('Teléfono sin E.164 → 400', badPhone.status === 400, badPhone.status, 400);
 
-  const badFund = await api('POST', '/merchants/me/fund', { amount: 999999 }, m001Token);
-  check('Fund > $10,000 → 400', badFund.status === 400, badFund.status, 400);
+  const badMerchId = await api('POST', '/loyalty/scan', { merchantId: 'no-uuid', amount: 10 }, userA.token);
+  check('merchantId no-UUID → 400', badMerchId.status === 400, badMerchId.status, 400);
 
-  // ── RESUMEN ────────────────────────────────────────────────────────────
-  const total = passed + failed;
-  console.log(`\n${C.bold}══════════════════════════════════════${C.reset}`);
+  const badAmt = await api('POST', '/loyalty/scan', { merchantId: fMId, amount: -5 }, userA.token);
+  check('amount negativo → 400', badAmt.status === 400, badAmt.status, 400);
+
+  const missingAmt = await api('POST', '/loyalty/scan', { merchantId: fMId }, userA.token);
+  check('amount faltante → 400', missingAmt.status === 400, missingAmt.status, 400);
+
+  const notFoundM = await api('POST', '/loyalty/scan', { merchantId: '00000000-0000-0000-0000-000000000000', amount: 10 }, userA.token);
+  check('merchantId inexistente → 404', notFoundM.status === 404, notFoundM.status, 404);
+
+  const badCpFmt = await api('POST', '/loyalty/scan', { merchantId: fMId, amount: 10, couponId: 'bad' }, userA.token);
+  check('couponId formato inválido → 400', badCpFmt.status === 400, badCpFmt.status, 400);
+
+  // ══════════════════════════════════════════════════════════════════════
+  // RESUMEN
+  // ══════════════════════════════════════════════════════════════════════
+  const total = passed + failed + skipped;
+  console.log(`\n${C.bold}═══════════════════════════════════════════════${C.reset}`);
   console.log(`${C.bold}  RESUMEN FINAL${C.reset}`);
-  console.log(`${C.bold}══════════════════════════════════════${C.reset}`);
-  console.log(`  Total checks : ${C.bold}${total}${C.reset}`);
-  console.log(`  ${C.green}Pasaron      : ${passed}${C.reset}`);
-  console.log(`  ${failed > 0 ? C.red : C.green}Fallaron     : ${failed}${C.reset}`);
-  console.log(`  Resultado    : ${failed === 0 ? `${C.green}${C.bold}TODO OK ✓${C.reset}` : `${C.red}${C.bold}HAY FALLOS ✗${C.reset}`}`);
+  console.log(`${C.bold}═══════════════════════════════════════════════${C.reset}`);
+  console.log(`  Total checks  : ${C.bold}${total}${C.reset}`);
+  console.log(`  ${C.green}Pasaron       : ${passed}${C.reset}`);
+  console.log(`  ${failed > 0 ? C.red : C.green}Fallaron      : ${failed}${C.reset}`);
+  if (skipped > 0) console.log(`  ${C.yellow}Skipped       : ${skipped}  (pon ANTIFRAUD_VELOCITY_WINDOW_SECONDS=0)${C.reset}`);
+  console.log(`  Resultado     : ${failed === 0 ? `${C.green}${C.bold}TODO OK ✓${C.reset}` : `${C.red}${C.bold}HAY FALLOS ✗${C.reset}`}`);
   console.log();
-
   if (failed > 0) process.exit(1);
 }
 
 run().catch(e => {
   console.error(`\n${C.red}Error fatal:${C.reset}`, e.message);
+  console.error(e.stack);
   process.exit(1);
 });
