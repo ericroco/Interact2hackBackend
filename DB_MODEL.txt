@@ -1,0 +1,313 @@
+================================================================================
+  MODELADO DE BASE DE DATOS — DEUNA LOYALTY BACKEND  (v2 — modelo final)
+  Sistema de Cupones por Umbrales de Confianza (Yapa)
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+TABLA: merchant_categories
+Propósito: Catálogo de categorías de negocio con benchmarks financieros.
+           Tabla de seed — pocos registros, alta lectura, rara escritura.
+────────────────────────────────────────────────────────────────────────────────
+  id                 UUID         PK
+  code               VARCHAR(50)  UNIQUE NOT NULL  -- ej: FOOD_BEVERAGE, ELECTRONICS
+  name               VARCHAR(150) NOT NULL         -- ej: "Restaurantes y Comida"
+  typical_margin_pct DECIMAL(5,4) NOT NULL         -- benchmark industria ej: 0.6500 = 65%
+  subsidy_cap_pct    DECIMAL(5,4) NOT NULL         -- techo máximo que Deuna financia
+  description        TEXT         NULL
+  created_at         TIMESTAMPTZ  NOT NULL DEFAULT now()
+
+SEEDS:
+  FOOD_BEVERAGE      typical_margin: 0.65  subsidy_cap: 0.0400
+  PERSONAL_SERVICES  typical_margin: 0.60  subsidy_cap: 0.0350
+  FASHION_RETAIL     typical_margin: 0.50  subsidy_cap: 0.0300
+  GROCERY            typical_margin: 0.30  subsidy_cap: 0.0200
+  PHARMACY           typical_margin: 0.28  subsidy_cap: 0.0180
+  ELECTRONICS        typical_margin: 0.12  subsidy_cap: 0.0100
+  OTHER              typical_margin: 0.35  subsidy_cap: 0.0220
+
+────────────────────────────────────────────────────────────────────────────────
+TABLA: tier_config
+Propósito: Define los umbrales de puntos y el % de cashback del cupón por
+           (categoría + tier). Reemplaza cualquier valor hardcodeado en código.
+           El valor del cupón se calcula en runtime:
+             coupon_value = merchant.average_ticket * cashback_pct
+────────────────────────────────────────────────────────────────────────────────
+  id                UUID         PK
+  category_id       UUID         FK → merchant_categories.id NOT NULL
+  tier_level        SMALLINT     NOT NULL CHECK(tier_level IN (1,2,3))
+  points_threshold  INTEGER      NOT NULL  -- puntos necesarios para desbloquear cupón
+                                           -- Tier 1: 100 pts, Tier 2: 250 pts, Tier 3: 500 pts
+  cashback_pct      DECIMAL(5,4) NOT NULL  -- % aplicado sobre average_ticket para calcular
+                                           -- el valor del cupón
+                                           -- Ej FOOD_BEVERAGE tier1: 0.0800 (8% del avg ticket)
+  is_active         BOOLEAN      NOT NULL DEFAULT TRUE
+  created_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+
+ÍNDICE: UNIQUE(category_id, tier_level)
+
+SEEDS EJEMPLO:
+  FOOD_BEVERAGE  tier1: threshold=100  cashback=0.0800  → avg_ticket=$25 → cupón=$2.00
+  FOOD_BEVERAGE  tier2: threshold=250  cashback=0.1200  → avg_ticket=$25 → cupón=$3.00
+  FOOD_BEVERAGE  tier3: threshold=500  cashback=0.1600  → avg_ticket=$25 → cupón=$4.00
+  ELECTRONICS    tier1: threshold=100  cashback=0.0200  → avg_ticket=$200 → cupón=$4.00
+  ELECTRONICS    tier2: threshold=250  cashback=0.0300  → avg_ticket=$200 → cupón=$6.00
+  ELECTRONICS    tier3: threshold=500  cashback=0.0400  → avg_ticket=$200 → cupón=$8.00
+
+  Lógica: el % varía por categoría pero el valor absoluto resulta razonable
+  para cualquier tipo de negocio porque siempre multiplica sobre SU avg_ticket.
+
+────────────────────────────────────────────────────────────────────────────────
+TABLA: users
+Propósito: Consumidores del ecosistema Deuna. Identificados por teléfono.
+────────────────────────────────────────────────────────────────────────────────
+  id          UUID         PK
+  phone       VARCHAR(20)  UNIQUE NOT NULL  -- formato E.164
+  email       VARCHAR(255) UNIQUE NULL
+  full_name   VARCHAR(150) NOT NULL
+  is_active   BOOLEAN      NOT NULL DEFAULT TRUE
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
+  updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
+
+────────────────────────────────────────────────────────────────────────────────
+TABLA: merchants
+Propósito: Locales afiliados a Deuna. La categoría determina su configuración
+           de cupones. average_ticket es el denominador del motor de puntos y
+           la base para calcular el valor del cupón.
+────────────────────────────────────────────────────────────────────────────────
+  id                     UUID          PK
+  category_id            UUID          FK → merchant_categories.id NOT NULL
+  business_name          VARCHAR(255)  NOT NULL
+  ruc                    VARCHAR(13)   UNIQUE NOT NULL
+  average_ticket         DECIMAL(12,2) NOT NULL DEFAULT 0
+                                       -- Actualizado con media exponencial ponderada
+                                       -- en cada transacción completada:
+                                       -- new_avg = 0.1 * amount + 0.9 * old_avg
+  coupon_funding_balance DECIMAL(14,2) NOT NULL DEFAULT 0
+                                       -- Saldo del comerciante para emitir cupones
+                                       -- de ADQUISICIÓN (financiados 100% por él)
+  is_active              BOOLEAN       NOT NULL DEFAULT TRUE
+  created_at             TIMESTAMPTZ   NOT NULL DEFAULT now()
+  updated_at             TIMESTAMPTZ   NOT NULL DEFAULT now()
+
+ÍNDICE: UNIQUE(ruc)
+ÍNDICE: (category_id)
+
+────────────────────────────────────────────────────────────────────────────────
+TABLA: transactions
+Propósito: Registro inmutable de cada compra. Incluye snapshots de los valores
+           usados para garantizar auditoría sin depender de datos futuros.
+────────────────────────────────────────────────────────────────────────────────
+  id                    UUID          PK
+  user_id               UUID          FK → users.id NOT NULL
+  merchant_id           UUID          FK → merchants.id NOT NULL
+  amount                DECIMAL(14,2) NOT NULL CHECK(amount > 0)
+  trust_points_earned   DECIMAL(12,4) NOT NULL DEFAULT 0
+                                      -- snapshot: (amount / avg_ticket_snapshot) * 10
+  avg_ticket_snapshot   DECIMAL(12,2) NOT NULL DEFAULT 0
+                                      -- avg_ticket del local en este momento exacto
+                                      -- permite reproducir el cálculo de puntos en auditoría
+  coupon_id_applied     UUID          NULL FK → loyalty_coupons.id
+                                      -- NULL si no se aplicó cupón en esta transacción
+  coupon_discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0
+                                      -- monto de descuento aplicado (= coupon.value si hay cupón)
+  tier_at_transaction   SMALLINT      NULL CHECK(tier_at_transaction IN (1,2,3))
+  status                VARCHAR(20)   NOT NULL DEFAULT 'pending'
+                                      CHECK(status IN ('pending','completed','reversed'))
+  created_at            TIMESTAMPTZ   NOT NULL DEFAULT now()
+
+ÍNDICE: (user_id, merchant_id, created_at DESC)
+ÍNDICE: (merchant_id, created_at DESC)
+ÍNDICE: (status) WHERE status = 'pending'
+
+POR QUÉ coupon_id_applied:
+  La transacción que redime el cupón queda vinculada al cupón.
+  Permite trazabilidad completa: saber en qué compra exacta se usó cada cupón.
+
+POR QUÉ trust_points_earned se calcula sobre el amount COMPLETO:
+  El usuario gana puntos sobre el valor total de la compra,
+  no sobre el valor con descuento. Incentiva seguir comprando después de canjear.
+
+────────────────────────────────────────────────────────────────────────────────
+TABLA: loyalty_tiers
+Propósito: Estado actual del usuario en cada local. Una fila por par
+           (user_id, merchant_id). Es el estado vivo de la relación de lealtad.
+────────────────────────────────────────────────────────────────────────────────
+  id                   UUID          PK
+  user_id              UUID          FK → users.id NOT NULL
+  merchant_id          UUID          FK → merchants.id NOT NULL
+  tier_level           SMALLINT      NOT NULL DEFAULT 1 CHECK(tier_level IN (1,2,3))
+  trust_points         DECIMAL(14,4) NOT NULL DEFAULT 0
+                                     -- Puntos acumulados desde el último reset
+                                     -- Se resetea a 0 cuando se redime el cupón
+  last_transaction_at  TIMESTAMPTZ   NULL
+  degradation_due_date TIMESTAMPTZ   NULL
+                                     -- deadline = lastTx + Max(30d, avg_frequency_days*2)
+  avg_frequency_days   DECIMAL(8,2)  NULL
+                                     -- Frecuencia promedio entre compras (días)
+                                     -- Media móvil actualizada en cada transacción
+  created_at           TIMESTAMPTZ   NOT NULL DEFAULT now()
+  updated_at           TIMESTAMPTZ   NOT NULL DEFAULT now()
+
+ÍNDICE: UNIQUE(user_id, merchant_id)
+ÍNDICE: (degradation_due_date) WHERE degradation_due_date IS NOT NULL
+
+NOTA: No tiene yapa_wallet_balance. El saldo ya no es un balance acumulado
+      sino un cupón concreto en la tabla loyalty_coupons.
+
+────────────────────────────────────────────────────────────────────────────────
+TABLA: loyalty_coupons
+Propósito: Cupones de lealtad (Yapa) generados al alcanzar el umbral de puntos.
+           Máximo 1 activo por par (user_id, merchant_id).
+           Financiados 100% por Deuna.
+────────────────────────────────────────────────────────────────────────────────
+  id               UUID          PK
+  user_id          UUID          FK → users.id NOT NULL
+  merchant_id      UUID          FK → merchants.id NOT NULL
+  tier_earned_at   SMALLINT      NOT NULL CHECK(tier_earned_at IN (1,2,3))
+                                 -- tier del usuario cuando se generó el cupón
+  value            DECIMAL(10,2) NOT NULL CHECK(value > 0)
+                                 -- monto calculado: avg_ticket_snapshot * cashback_pct
+  avg_ticket_snapshot DECIMAL(12,2) NOT NULL
+                                 -- snapshot del avg_ticket usado para calcular value
+  cashback_pct_snapshot DECIMAL(5,4) NOT NULL
+                                 -- snapshot del % usado (de tier_config)
+                                 -- ambos snapshots permiten auditar el cálculo
+  status           VARCHAR(20)   NOT NULL DEFAULT 'active'
+                                 CHECK(status IN ('active','redeemed','expired'))
+  redeemed_in_transaction_id UUID NULL FK → transactions.id
+                                 -- transacción donde se usó el cupón
+  expires_at       TIMESTAMPTZ   NOT NULL
+                                 -- cupones caducan (ej: 30 días desde emisión)
+                                 -- presión para volver al local
+  created_at       TIMESTAMPTZ   NOT NULL DEFAULT now()
+  updated_at       TIMESTAMPTZ   NOT NULL DEFAULT now()
+
+ÍNDICE: UNIQUE(user_id, merchant_id) WHERE status = 'active'
+        -- garantiza solo 1 cupón activo por par usuario-local a nivel de DB
+ÍNDICE: (expires_at) WHERE status = 'active'
+        -- job de expiración nocturno
+
+────────────────────────────────────────────────────────────────────────────────
+TABLA: platform_subsidies_ledger
+Propósito: Libro contable de cada centavo que Deuna financia.
+           Un registro por cupón redimido. Permite conciliación financiera.
+────────────────────────────────────────────────────────────────────────────────
+  id             UUID          PK
+  coupon_id      UUID          FK → loyalty_coupons.id NOT NULL UNIQUE
+                               -- una entrada por cupón redimido
+  transaction_id UUID          FK → transactions.id NOT NULL
+  merchant_id    UUID          FK → merchants.id NOT NULL
+  user_id        UUID          FK → users.id NOT NULL
+  amount         DECIMAL(14,2) NOT NULL  -- igual a loyalty_coupons.value
+  status         VARCHAR(20)   NOT NULL DEFAULT 'pending'
+                               CHECK(status IN ('pending','settled','reversed'))
+  settled_at     TIMESTAMPTZ   NULL
+  created_at     TIMESTAMPTZ   NOT NULL DEFAULT now()
+
+────────────────────────────────────────────────────────────────────────────────
+TABLA: acquisition_coupons
+Propósito: Cupones de adquisición emitidos por comerciantes para atraer nuevos
+           clientes. Financiados 100% por el comerciante (coupon_funding_balance).
+           Regla dura: minimum_ticket = value * 4 (validada en dominio).
+           Son distintos a los loyalty_coupons — diferente origen y financiador.
+────────────────────────────────────────────────────────────────────────────────
+  id              UUID          PK
+  merchant_id     UUID          FK → merchants.id NOT NULL
+  code            VARCHAR(20)   UNIQUE NOT NULL
+  value           DECIMAL(10,2) NOT NULL CHECK(value > 0)
+  minimum_ticket  DECIMAL(10,2) NOT NULL  -- = value * 4, enforced en domain service
+  is_redeemed     BOOLEAN       NOT NULL DEFAULT FALSE
+  redeemed_by     UUID          NULL FK → users.id
+  redeemed_at     TIMESTAMPTZ   NULL
+  expires_at      TIMESTAMPTZ   NOT NULL
+  created_at      TIMESTAMPTZ   NOT NULL DEFAULT now()
+
+ÍNDICE: UNIQUE(code)
+ÍNDICE: (merchant_id, is_redeemed, expires_at)
+
+================================================================================
+  FLUJO COMPLETO DE UNA TRANSACCIÓN (process-transaction use case)
+================================================================================
+
+  ENTRADA: { userId, merchantId, amount, couponCode? }
+
+  1. [Redis] Verificar Velocity Limit → MAX 1 tx con puntos cada 4h por local
+     └─ Si bloqueado → 429 TooManyRequests
+
+  2. [DB] Cargar merchant (con category) y loyalty_tier (user+merchant)
+     └─ Si no existe loyalty_tier → crear con tier_level=1, trust_points=0
+
+  3. [DB] Verificar si hay loyalty_coupon activo para este par (user, merchant)
+     └─ Si status='active' y expires_at > now() → aplicar descuento en esta tx
+
+  4. [Domain] Calcular:
+     trust_points_earned = (amount / merchant.average_ticket) * 10
+     new_trust_points    = loyalty_tier.trust_points + trust_points_earned
+
+  5. [DB] Cargar tier_config para (merchant.category_id, loyalty_tier.tier_level)
+     └─ Verificar si new_trust_points >= config.points_threshold
+
+  6a. Si NO supera umbral:
+      - Actualizar loyalty_tier (trust_points, last_transaction_at, degradation_due_date)
+
+  6b. Si SÍ supera umbral:
+      - ¿Hay loyalty_coupon activo? → NO generar otro (uno a la vez)
+      - Si no hay cupón activo:
+          coupon_value = merchant.average_ticket * config.cashback_pct
+          INSERT loyalty_coupon (status='active', value=coupon_value, ...)
+      - Mantener los puntos acumulados (NO resetear aún — reset ocurre al REDIMIR)
+      - Actualizar loyalty_tier (trust_points=new_trust_points)
+
+  7. [DB - QueryRunner ATÓMICO]:
+     a. INSERT transaction (status='pending')
+     b. Si había cupón activo aplicado:
+        - UPDATE loyalty_coupon → status='redeemed', redeemed_in_transaction_id
+        - INSERT platform_subsidies_ledger
+        - UPDATE loyalty_tier: trust_points=0, tier_level++ (si < 3)
+     c. UPDATE merchant.average_ticket (media exponencial: 0.1*amount + 0.9*old)
+     d. UPDATE loyalty_tier (last_transaction_at, degradation_due_date, avg_frequency_days)
+     e. UPDATE transaction → status='completed'
+
+  8. [Redis] SET velocity key con TTL 14400s
+
+  SALIDA: { trustPointsEarned, newTrustPoints, tierLevel, couponUnlocked?, couponValue? }
+
+================================================================================
+  DIAGRAMA DE RELACIONES
+================================================================================
+
+  merchant_categories ──┬── tier_config (N configs por categoría, una por tier)
+                         └── merchants
+                                  │
+              ┌──────────────────┬┴──────────────────────┐
+              │                  │                        │
+  acquisition_coupons      transactions          loyalty_tiers
+                              │    │                (user+merchant state)
+                   coupon_id_applied│
+                              │    │
+                       loyalty_coupons ── platform_subsidies_ledger
+                         (1 activo      (1 entrada por cupón redimido)
+                       por user+merchant)
+
+================================================================================
+  REGLA DE DEGRADACIÓN
+================================================================================
+
+  Job nocturno evalúa loyalty_tiers WHERE degradation_due_date <= now():
+    deadline = last_transaction_at + GREATEST(
+      INTERVAL '30 days',
+      avg_frequency_days * 2 * INTERVAL '1 day'
+    )
+  Si supera el deadline:
+    - tier_level = MAX(1, tier_level - 1)
+    - Si había loyalty_coupon activo → expires_at = now() (expira)
+    - trust_points se mantienen (el usuario no pierde puntos, solo baja tier)
+
+================================================================================
+  REGLA ANTIFRAUDE (Redis)
+================================================================================
+
+  Key:  antifraud:velocity:{userId}:{merchantId}
+  TTL:  14400 segundos (4 horas)
+  SET NX EX → atómico. Si la key existe, la transacción NO otorga puntos.
+  El registro de la compra sí se guarda pero trust_points_earned = 0.
