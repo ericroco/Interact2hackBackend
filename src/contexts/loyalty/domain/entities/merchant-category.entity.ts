@@ -14,10 +14,6 @@ export class MerchantCategoryEntity {
   @Column({ name: 'typical_margin_pct', type: 'decimal', precision: 5, scale: 4 })
   typicalMarginPct: number;
 
-  /**
-   * Techo máximo que Deuna financia como cashback para esta categoría.
-   * Derivado de typical_margin_pct para garantizar sostenibilidad del modelo.
-   */
   @Column({ name: 'subsidy_cap_pct', type: 'decimal', precision: 5, scale: 4 })
   subsidyCapPct: number;
 

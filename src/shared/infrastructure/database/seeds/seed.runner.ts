@@ -9,8 +9,6 @@ export class SeedRunner implements OnApplicationBootstrap {
   constructor(private readonly dataSource: DataSource) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    // Hemos removido temporalmente el chequeo de producción para permitir 
-    // insertar los datasets de semillas (dim_users, etc.) en AWS Terraform.
     try {
       await runSeeds(this.dataSource);
       this.logger.log('Database seeds executed');

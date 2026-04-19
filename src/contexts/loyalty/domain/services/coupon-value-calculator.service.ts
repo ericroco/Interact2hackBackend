@@ -1,17 +1,5 @@
 import { Injectable } from '@nestjs/common';
 
-/**
- * Fórmula equitativa para todos los tipos de local:
- *   rawValue = averageTicket * 18%
- *   couponValue = clamp(rawValue, tierFloor, tierCap)
- *
- * El piso garantiza que tickets muy bajos generen un cupón útil.
- * El techo evita que tickets altos den cupones desproporcionados.
- *
- * Tier 1: [$0.50 – $2.00]
- * Tier 2: [$1.00 – $3.50]
- * Tier 3: [$1.50 – $5.00]
- */
 @Injectable()
 export class CouponValueCalculator {
   private readonly CASHBACK_PCT = 0.18;

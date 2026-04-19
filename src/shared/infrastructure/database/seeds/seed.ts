@@ -14,7 +14,6 @@ const CATEGORIES = [
   { code: 'OTHER',             name: 'Otros',                    typicalMarginPct: 0.35, subsidyCapPct: 0.022 },
 ];
 
-// cashback_pct aplicado sobre average_ticket para calcular el valor del cupón
 const TIER_CASHBACK: Record<string, [number, number, number]> = {
   FOOD_BEVERAGE:     [0.08, 0.12, 0.16],
   PERSONAL_SERVICES: [0.07, 0.11, 0.14],
@@ -35,7 +34,6 @@ export async function runSeeds(dataSource: DataSource): Promise<void> {
   const tierConfigRepo = dataSource.getRepository(TierConfigEntity);
   const merchantRepo = dataSource.getRepository(MerchantEntity);
 
-  // Dar $5 a cualquier merchant con menos de $5 en saldo (migración crédito inicial)
   await merchantRepo
     .createQueryBuilder()
     .update()

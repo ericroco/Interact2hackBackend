@@ -13,14 +13,6 @@ export enum TierLevel {
   HIGH = 3,
 }
 
-/**
- * Estado vivo de la relación usuario–local.
- * trust_points se resetea a 0 al redimir un cupón de lealtad.
- * tier_level sube al redimir (hasta MAX=3).
- *
- * Regla de degradación por inactividad:
- *   degradation_due_date = last_transaction_at + MAX(30d, avg_frequency_days * 2)
- */
 @Entity('loyalty_tiers')
 @Index(['userId', 'merchantId'], { unique: true })
 export class LoyaltyTierEntity {

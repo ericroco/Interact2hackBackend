@@ -9,7 +9,6 @@ export class ScanTransactionDto {
   @IsPositive()
   amount: number;
 
-  /** UUID de la yapa que el usuario elige canjear en esta compra. Opcional. */
   @IsUUID()
   @IsOptional()
   couponId?: string;

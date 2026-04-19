@@ -6,7 +6,6 @@ import { TierConfigRepositoryPort, TIER_CONFIG_REPOSITORY } from '../../domain/p
 import { CouponStatus } from '../../domain/entities/loyalty-coupon.entity';
 
 export interface ActiveYapaDto {
-  /** ID para usar en el campo couponId del scan al canjear. */
   id: string;
   value: number;
   tierEarnedAt: number;
@@ -19,11 +18,9 @@ export interface LoyaltyProfileEntry {
   tierLevel: number;
   trustPoints: number;
   pointsToNextCoupon: number | null;
-  /** Lista de yapas activas. El usuario elige cuál usar pasando su id al scan. */
   activeYapas: ActiveYapaDto[];
   yapasCount: number;
   totalYapasValue: number;
-  /** Fecha límite antes de que el tier baje por inactividad. Null si nunca tuvo transacción. */
   degradationDueDate: Date | null;
 }
 

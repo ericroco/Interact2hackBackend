@@ -29,7 +29,6 @@ import { buildSuccess } from '@shared/application/contracts/api-response.interfa
 import { Inject } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
-/** Deuna Negocios — todos los endpoints requieren token de comerciante */
 @Controller('merchants')
 @UseGuards(MerchantGuard)
 export class MerchantController {
@@ -48,14 +47,12 @@ export class MerchantController {
     private readonly dataSource: DataSource,
   ) {}
 
-  /** Dashboard principal de Deuna Negocios */
   @Get('me/stats')
   async stats(@Request() req: any) {
     const result = await this.getStats.execute(req.user.sub);
     return buildSuccess(result);
   }
 
-  /** Emitir cupón de adquisición (financiado por el comerciante) */
   @Post('me/coupons')
   @HttpCode(HttpStatus.CREATED)
   async issueCoupon(@Request() req: any, @Body() dto: CreateAcquisitionCouponDto) {
@@ -63,14 +60,12 @@ export class MerchantController {
     return buildSuccess(result);
   }
 
-  /** Listar cupones de adquisición del local */
   @Get('me/coupons')
   async listCoupons(@Request() req: any) {
     const coupons = await this.couponRepo.findByMerchant(req.user.sub);
     return buildSuccess(coupons);
   }
 
-  /** Recargar saldo de financiamiento de cupones */
   @Post('me/fund')
   @HttpCode(HttpStatus.OK)
   async topUp(@Request() req: any, @Body() dto: TopUpFundDto) {
@@ -78,7 +73,6 @@ export class MerchantController {
     return buildSuccess(result);
   }
 
-  /** Activar / desactivar el programa de lealtad del local */
   @Patch('me/loyalty')
   @HttpCode(HttpStatus.OK)
   async setLoyalty(@Request() req: any, @Body() dto: ToggleLoyaltyDto) {
@@ -86,7 +80,6 @@ export class MerchantController {
     return buildSuccess(result);
   }
 
-  /** Eliminar cupón de adquisición (restaura balance si no fue canjeado) */
   @Delete('me/coupons/:id')
   @HttpCode(HttpStatus.OK)
   async deleteCoupon(@Request() req: any, @Param('id') id: string) {
@@ -108,7 +101,6 @@ export class MerchantController {
     return buildSuccess({ deleted: true });
   }
 
-  /** Publicar yapa — genera un broadcast a clientes del negocio */
   @Post('me/coupons/:id/publish')
   @HttpCode(HttpStatus.OK)
   async publish(@Request() req: any, @Param('id') id: string) {
@@ -116,14 +108,12 @@ export class MerchantController {
     return buildSuccess(result);
   }
 
-  /** Catálogo de categorías (público dentro de autenticados) */
   @Get('categories')
   async categories() {
     const cats = await this.categoryRepo.findAll();
     return buildSuccess(cats);
   }
 
-  /** Últimas transacciones recibidas por el comerciante */
   @Get('me/transactions')
   async myTransactions(
     @Request() req: any,

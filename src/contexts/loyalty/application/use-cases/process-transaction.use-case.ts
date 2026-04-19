@@ -52,7 +52,6 @@ export class ProcessTransactionUseCase {
     const category = await this.categoryRepo.findById(merchant.categoryId);
     if (!category) throw new UnprocessableEntityException('Merchant category not configured');
 
-    // Validar yapa elegida por el usuario (si proporcionó couponId)
     let chosenCoupon: LoyaltyCouponEntity | null = null;
     if (dto.couponId) {
       const candidate = await this.couponRepo.findById(dto.couponId);
@@ -93,7 +92,6 @@ export class ProcessTransactionUseCase {
     await queryRunner.startTransaction();
 
     try {
-      // Insertar transacción en estado PENDING
       const transaction = await queryRunner.manager.save(
         queryRunner.manager.create(TransactionEntity, {
           userId,
@@ -111,7 +109,6 @@ export class ProcessTransactionUseCase {
       let currentTierLevel = loyaltyTier.tierLevel;
       let currentPoints = Number(loyaltyTier.trustPoints);
 
-      // Redimir la yapa elegida por el usuario (si eligió una)
       if (chosenCoupon) {
         await queryRunner.manager.update(LoyaltyCouponEntity, chosenCoupon.id, {
           status: CouponStatus.REDEEMED,
@@ -129,27 +126,21 @@ export class ProcessTransactionUseCase {
             settledAt: null,
           }),
         );
-        // Al redimir NO se resetean puntos ni se sube el tier.
-        // Eso ocurrió cuando se GENERÓ la yapa.
       }
 
-      // Acumular puntos de esta transacción
       const newTrustPoints = currentPoints + trustPointsEarned;
 
-      // Calcular degradación
       const { degradationDueDate, avgFrequencyDays } = this.degradationCalc.calculate(
         loyaltyTier.lastTransactionAt,
         loyaltyTier.avgFrequencyDays ? Number(loyaltyTier.avgFrequencyDays) : null,
         new Date(),
       );
 
-      // Actualizar ticket promedio del local (media exponencial)
       const newAvgTicket = this.effortEngine.updateAverageTicket(avgTicketSnapshot, dto.amount);
       await queryRunner.manager.update(MerchantEntity, merchant.id, {
         averageTicket: newAvgTicket,
       });
 
-      // Verificar si se alcanzó el umbral para generar nueva yapa
       let newCouponUnlocked: { id: string; value: number; message: string } | null = null;
 
       if (!isBlocked) {
@@ -163,7 +154,6 @@ export class ProcessTransactionUseCase {
         const canGenerateMore = activeYapasCount < MAX_ACTIVE_YAPAS;
 
         if (thresholdReached && canGenerateMore) {
-          // Capturar tier actual ANTES de subir (para el snapshot correcto)
           const tierEarnedAt = currentTierLevel;
           const couponValue = this.couponCalc.calculate(
             newAvgTicket,
@@ -173,7 +163,6 @@ export class ProcessTransactionUseCase {
           const expiresAt = new Date();
           expiresAt.setDate(expiresAt.getDate() + COUPON_EXPIRY_DAYS);
 
-          // Al generar la yapa: subir tier y resetear puntos
           currentTierLevel = this.tierService.nextTier(currentTierLevel);
           const newYapa = await queryRunner.manager.save(
             queryRunner.manager.create(LoyaltyCouponEntity, {
@@ -189,7 +178,6 @@ export class ProcessTransactionUseCase {
             }),
           );
 
-          // Resetear puntos tras ganar la yapa
           await queryRunner.manager.update(LoyaltyTierEntity, loyaltyTier.id, {
             tierLevel: currentTierLevel,
             trustPoints: 0,
@@ -204,7 +192,6 @@ export class ProcessTransactionUseCase {
             message: `¡Ganaste una Yapa de $${couponValue.toFixed(2)} en ${merchant.businessName}!`,
           };
         } else {
-          // No se generó yapa, solo actualizar puntos normalmente
           await queryRunner.manager.update(LoyaltyTierEntity, loyaltyTier.id, {
             trustPoints: newTrustPoints,
             lastTransactionAt: new Date(),
@@ -213,13 +200,11 @@ export class ProcessTransactionUseCase {
           });
         }
       } else {
-        // Transacción bloqueada por antifraud — actualizar solo timestamps
         await queryRunner.manager.update(LoyaltyTierEntity, loyaltyTier.id, {
           lastTransactionAt: new Date(),
         });
       }
 
-      // Completar transacción
       await queryRunner.manager.update(TransactionEntity, transaction.id, {
         status: TransactionStatus.COMPLETED,
       });
@@ -230,13 +215,10 @@ export class ProcessTransactionUseCase {
         await this.antifraud.setVelocityLimit(userId, dto.merchantId);
       }
 
-      // Compute final state in-memory — avoids reading stale data from the
-      // TypeORM identity map that was populated before this queryRunner update.
-      // currentTierLevel is already upgraded when a coupon was generated above.
       const finalPoints = isBlocked
         ? currentPoints
         : newCouponUnlocked !== null
-          ? 0             // points reset to 0 when a new yapa is generated
+          ? 0
           : newTrustPoints;
       const finalTierLevel = currentTierLevel;
 

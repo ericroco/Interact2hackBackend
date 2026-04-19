@@ -25,7 +25,6 @@ function parseCsv(filename: string): Record<string, string>[] {
   const lines = content.trim().split('\n');
   const headers = lines[0].split(',');
   return lines.slice(1).map((line) => {
-    // Regex for standard CSV: split by comma but ignore commas inside double quotes
     const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
     return Object.fromEntries(headers.map((h, i) => [
       h.trim(), 
@@ -60,11 +59,9 @@ export async function runDatasetSeed(dataSource: DataSource): Promise<void> {
   const csvUsers = parseCsv('dim_users.csv');
   const csvTxs = parseCsv('fact_transactions.csv');
 
-  // ── Mapa de categorías DB ──────────────────────────────────────────────────
   const allCategories = await categoryRepo.find();
   const categoryByCode = new Map(allCategories.map((c) => [c.code, c]));
 
-  // ── Merchants ──────────────────────────────────────────────────────────────
   const merchantById = new Map<string, MerchantEntity>();
   const merchantMeta = new Map(csvMerchants.map((r) => [r.merchant_id, r]));
 
@@ -94,7 +91,6 @@ export async function runDatasetSeed(dataSource: DataSource): Promise<void> {
         }),
       );
     } else {
-      // Update existing merchant coordinates just in case
       merchant.latitude = parseFloat(row.lat) || 0;
       merchant.longitude = parseFloat(row.lng) || 0;
       await merchantRepo.save(merchant);
@@ -102,7 +98,6 @@ export async function runDatasetSeed(dataSource: DataSource): Promise<void> {
     merchantById.set(row.merchant_id, merchant);
   }
 
-  // ── Usuarios ───────────────────────────────────────────────────────────────
   const userByCsvId = new Map<string, UserEntity>();
 
   for (const row of csvUsers) {
@@ -138,7 +133,6 @@ export async function runDatasetSeed(dataSource: DataSource): Promise<void> {
     ]),
   );
 
-  // ── Loyalty tiers y cupones activos por par (user, merchant) ───────────────
   const pairsSet = new Set<string>();
   const pairDisponible = new Set<string>();
 
@@ -206,8 +200,6 @@ export async function runDatasetSeed(dataSource: DataSource): Promise<void> {
     );
   }
 
-  // ── Transacciones (570 filas del CSV) ─────────────────────────────────────
-  // Verificar cuántas ya existen para decidir si insertar
   const existingTxCount = await dataSource.query(
     `SELECT COUNT(*) FROM transactions WHERE avg_ticket_snapshot > 0 AND coupon_discount_amount = 0 AND created_at < NOW() - INTERVAL '30 days'`
   );
@@ -217,7 +209,6 @@ export async function runDatasetSeed(dataSource: DataSource): Promise<void> {
     return;
   }
 
-  // Batch insert de transacciones con timestamps históricos reales
   const BATCH_SIZE = 50;
   let insertedTxCount = 0;
 

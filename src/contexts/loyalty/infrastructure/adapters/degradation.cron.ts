@@ -45,7 +45,6 @@ export class DegradationCron {
           degradationDueDate: null,
         });
 
-        // Expirar el cupón activo si lo hubiera
         await queryRunner.manager.update(
           LoyaltyCouponEntity,
           { userId: tier.userId, merchantId: tier.merchantId, status: CouponStatus.ACTIVE },

@@ -6,11 +6,6 @@ export enum SubsidyStatus {
   REVERSED = 'reversed',
 }
 
-/**
- * Libro contable de cada centavo que Deuna financia.
- * Una entrada por loyalty_coupon redimido.
- * Permite conciliación financiera y reporting de sostenibilidad del programa.
- */
 @Entity('platform_subsidies_ledger')
 @Index(['couponId'], { unique: true })
 @Index(['merchantId', 'status', 'createdAt'])

@@ -1,12 +1,5 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
-/**
- * Cupones de adquisición emitidos por comerciantes para atraer clientes nuevos.
- * Financiados 100% por el comerciante (deduce de merchant.couponFundingBalance).
- * El comerciante define el valor y la compra mínima requerida.
- *
- * Distintos a loyalty_coupons: diferente origen, diferente financiador, diferente flujo.
- */
 @Entity('acquisition_coupons')
 export class AcquisitionCouponEntity {
   @PrimaryGeneratedColumn('uuid')

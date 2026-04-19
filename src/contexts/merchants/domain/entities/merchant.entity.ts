@@ -26,10 +26,6 @@ export class MerchantEntity {
   @Column({ name: 'password_hash', length: 255 })
   passwordHash: string;
 
-  /**
-   * Denominador del Motor de Esfuerzo Relativo y base del valor del cupón.
-   * Actualizado con media exponencial ponderada: 0.1*amount + 0.9*oldAvg
-   */
   @Column({ name: 'average_ticket', type: 'decimal', precision: 12, scale: 2, default: 0 })
   averageTicket: number;
 

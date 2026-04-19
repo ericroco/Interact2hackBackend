@@ -28,18 +28,9 @@ export class TransactionEntity {
   @Column({ type: 'decimal', precision: 14, scale: 2 })
   amount: number;
 
-  /**
-   * Puntos ganados = (amount / avg_ticket_snapshot) * 10
-   * Calculados sobre el monto COMPLETO aunque se haya aplicado un cupón.
-   * 0 si la tx fue bloqueada por velocity limit (antifraude).
-   */
   @Column({ name: 'trust_points_earned', type: 'decimal', precision: 12, scale: 4, default: 0 })
   trustPointsEarned: number;
 
-  /**
-   * Snapshot del average_ticket del local en el momento exacto de la transacción.
-   * Permite reproducir el cálculo de puntos en auditorías futuras.
-   */
   @Column({ name: 'avg_ticket_snapshot', type: 'decimal', precision: 12, scale: 2, default: 0 })
   avgTicketSnapshot: number;
 

@@ -45,7 +45,6 @@ export class LoyaltyController {
     return buildSuccess(result);
   }
 
-  /** Ofertas y promociones publicadas por los negocios del usuario */
   @Get('broadcasts')
   async getBroadcasts(@Request() req: any, @Query('since') since?: string) {
     const tiers = await this.tierRepo.findBy({ userId: req.user.sub });

@@ -5,14 +5,6 @@ const MS_PER_DAY = 86_400_000;
 
 @Injectable()
 export class DegradationCalculator {
-  /**
-   * Calcula la fecha límite de inactividad y actualiza la frecuencia promedio.
-   *
-   * Regla: deadline = lastTransactionAt + MAX(30 días, avgFrequencyDays * 2)
-   *
-   * avgFrequencyDays se actualiza como media exponencial del intervalo entre compras.
-   * Si es la primera compra del usuario en el local, no hay intervalo → se usa 30 días.
-   */
   calculate(
     lastTransactionAt: Date | null,
     currentAvgFrequencyDays: number | null,

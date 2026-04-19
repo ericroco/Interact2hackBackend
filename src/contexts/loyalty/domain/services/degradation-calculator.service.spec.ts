@@ -13,18 +13,16 @@ describe('DegradationCalculator', () => {
   });
 
   it('uses MAX(30, freq*2) when frequency < 15 days', () => {
-    const lastTx = new Date('2025-01-10T12:00:00Z'); // 5 days ago
+    const lastTx = new Date('2025-01-10T12:00:00Z');
     const { degradationDueDate } = calc.calculate(lastTx, 5, now);
     const diff = (degradationDueDate.getTime() - now.getTime()) / 86_400_000;
-    // freq=5, freq*2=10 < 30 → should use 30 days
     expect(diff).toBeCloseTo(30, 0);
   });
 
   it('uses freq*2 when frequency > 15 days', () => {
-    const lastTx = new Date('2024-12-16T12:00:00Z'); // 30 days ago
+    const lastTx = new Date('2024-12-16T12:00:00Z');
     const { degradationDueDate } = calc.calculate(lastTx, 30, now);
     const diff = (degradationDueDate.getTime() - now.getTime()) / 86_400_000;
-    // freq=30, freq*2=60 > 30 → should use ~60 days
     expect(diff).toBeGreaterThan(30);
   });
 });

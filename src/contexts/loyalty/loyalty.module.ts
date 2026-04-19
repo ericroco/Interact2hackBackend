@@ -33,10 +33,6 @@ import { GetTransactionHistoryUseCase } from './application/use-cases/get-transa
 import { TRANSACTION_REPOSITORY } from '@contexts/transactions/domain/ports/transaction.repository.port';
 import { TransactionTypeOrmRepository } from '@contexts/transactions/infrastructure/adapters/transaction.typeorm.repository';
 
-/**
- * LoyaltyModule es autónomo — provee su propio MERCHANT_REPOSITORY
- * para evitar dependencia circular con MerchantsModule.
- */
 @Module({
   imports: [
     forwardRef(() => AuthModule),
