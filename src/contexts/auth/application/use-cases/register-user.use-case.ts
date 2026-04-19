@@ -23,6 +23,8 @@ export class RegisterUserUseCase {
       email: dto.email ?? null,
       passwordHash,
       isActive: true,
+      latitude: 0,
+      longitude: 0,
     });
 
     const accessToken = this.jwtService.sign({

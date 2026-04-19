@@ -11,7 +11,7 @@ export class LoginUserUseCase {
     private readonly jwtService: JwtService,
   ) {}
 
-  async execute(dto: LoginDto): Promise<{ accessToken: string; userId: string }> {
+  async execute(dto: LoginDto): Promise<{ accessToken: string; userId: string; fullName: string }> {
     const user = await this.userRepo.findByPhone(dto.phone);
     if (!user || !user.isActive) throw new UnauthorizedException('Invalid credentials');
 
@@ -24,6 +24,6 @@ export class LoginUserUseCase {
       role: 'user',
     });
 
-    return { accessToken, userId: user.id };
+    return { accessToken, userId: user.id, fullName: user.fullName };
   }
 }

@@ -18,6 +18,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
+COPY datasets1 ./datasets1
 
 EXPOSE 3000
 

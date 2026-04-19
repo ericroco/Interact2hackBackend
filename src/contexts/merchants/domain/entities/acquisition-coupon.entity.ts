@@ -15,6 +15,9 @@ export class AcquisitionCouponEntity {
   @Column({ name: 'merchant_id' })
   merchantId: string;
 
+  @Column({ length: 100, nullable: true, default: '' })
+  name: string;
+
   @Column({ unique: true, length: 20 })
   code: string;
 
@@ -23,6 +26,9 @@ export class AcquisitionCouponEntity {
 
   @Column({ name: 'minimum_ticket', type: 'decimal', precision: 10, scale: 2 })
   minimumTicket: number;
+
+  @Column({ type: 'int', default: 1 })
+  quantity: number;
 
   @Column({ name: 'is_redeemed', default: false })
   isRedeemed: boolean;

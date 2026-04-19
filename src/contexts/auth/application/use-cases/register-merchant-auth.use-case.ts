@@ -36,6 +36,8 @@ export class RegisterMerchantAuthUseCase {
       couponFundingBalance: 5, // crédito inicial Deuna: $5 en cupones de adquisición
       isActive: true,
       loyaltyEnabled: false,
+      latitude: 0,
+      longitude: 0,
     });
 
     const accessToken = this.jwtService.sign({

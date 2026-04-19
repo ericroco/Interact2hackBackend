@@ -9,6 +9,7 @@ import { TierConfigEntity } from '@contexts/loyalty/domain/entities/tier-config.
 import { LoyaltyTierEntity } from '@contexts/loyalty/domain/entities/loyalty-tier.entity';
 import { LoyaltyCouponEntity } from '@contexts/loyalty/domain/entities/loyalty-coupon.entity';
 import { PlatformSubsidyLedgerEntity } from '@contexts/loyalty/domain/entities/platform-subsidy-ledger.entity';
+import { MerchantBroadcastEntity } from '@contexts/merchants/domain/entities/merchant-broadcast.entity';
 
 export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
   inject: [ConfigService],
@@ -25,6 +26,7 @@ export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
       LoyaltyTierEntity,
       LoyaltyCouponEntity,
       PlatformSubsidyLedgerEntity,
+      MerchantBroadcastEntity,
     ],
     migrations: [__dirname + '/migrations/*.{ts,js}'],
     synchronize: config.get('NODE_ENV') === 'development' || config.get('DB_SYNC') === 'true',

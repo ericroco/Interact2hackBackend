@@ -23,6 +23,8 @@ export interface LoyaltyProfileEntry {
   activeYapas: ActiveYapaDto[];
   yapasCount: number;
   totalYapasValue: number;
+  /** Fecha límite antes de que el tier baje por inactividad. Null si nunca tuvo transacción. */
+  degradationDueDate: Date | null;
 }
 
 @Injectable()
@@ -77,6 +79,7 @@ export class GetUserLoyaltyProfileUseCase {
           activeYapas,
           yapasCount: activeYapas.length,
           totalYapasValue: Math.round(totalYapasValue * 100) / 100,
+          degradationDueDate: tier.degradationDueDate ?? null,
         };
       }),
     );

@@ -16,13 +16,14 @@ export class UserGuard implements CanActivate {
     const token = this.extractToken(request);
     if (!token) throw new UnauthorizedException('Missing bearer token');
 
+    let payload: any;
     try {
-      const payload = await this.jwtService.verifyAsync(token);
-      if (payload.role !== 'user') throw new UnauthorizedException('User token required');
-      (request as any).user = payload;
+      payload = await this.jwtService.verifyAsync(token);
     } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }
+    if (payload.role !== 'user') throw new UnauthorizedException('User token required');
+    (request as any).user = payload;
 
     return true;
   }

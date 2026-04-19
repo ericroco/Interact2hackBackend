@@ -230,15 +230,22 @@ export class ProcessTransactionUseCase {
         await this.antifraud.setVelocityLimit(userId, dto.merchantId);
       }
 
-      // Leer estado final para la respuesta
-      const finalTier = await this.loyaltyTierRepo.findByUserAndMerchant(userId, dto.merchantId);
-      const finalPoints = Number(finalTier?.trustPoints ?? 0);
-      const finalTierLevel = finalTier?.tierLevel ?? currentTierLevel;
+      // Compute final state in-memory — avoids reading stale data from the
+      // TypeORM identity map that was populated before this queryRunner update.
+      // currentTierLevel is already upgraded when a coupon was generated above.
+      const finalPoints = isBlocked
+        ? currentPoints
+        : newCouponUnlocked !== null
+          ? 0             // points reset to 0 when a new yapa is generated
+          : newTrustPoints;
+      const finalTierLevel = currentTierLevel;
 
-      const tierConfig = await this.tierConfigRepo.findByCategoryAndTier(
-        merchant.categoryId,
-        finalTierLevel,
-      );
+      const tierConfig = isBlocked
+        ? null
+        : await this.tierConfigRepo.findByCategoryAndTier(
+            merchant.categoryId,
+            finalTierLevel,
+          );
       const pointsToNextCoupon = tierConfig
         ? Math.max(0, tierConfig.pointsThreshold - finalPoints)
         : null;

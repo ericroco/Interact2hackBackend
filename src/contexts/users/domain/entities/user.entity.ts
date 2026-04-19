@@ -26,6 +26,12 @@ export class UserEntity {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
+  @Column({ type: 'decimal', precision: 10, scale: 6, default: 0 })
+  latitude: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 6, default: 0 })
+  longitude: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

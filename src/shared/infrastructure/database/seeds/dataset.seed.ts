@@ -25,8 +25,12 @@ function parseCsv(filename: string): Record<string, string>[] {
   const lines = content.trim().split('\n');
   const headers = lines[0].split(',');
   return lines.slice(1).map((line) => {
-    const values = line.split(',');
-    return Object.fromEntries(headers.map((h, i) => [h.trim(), (values[i] ?? '').trim()]));
+    // Regex for standard CSV: split by comma but ignore commas inside double quotes
+    const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    return Object.fromEntries(headers.map((h, i) => [
+      h.trim(), 
+      (values[i] ?? '').replace(/^"|"$/g, '').trim()
+    ]));
   });
 }
 
@@ -85,8 +89,15 @@ export async function runDatasetSeed(dataSource: DataSource): Promise<void> {
           couponFundingBalance: 5,
           isActive: true,
           loyaltyEnabled: true,
+          latitude: parseFloat(row.lat) || 0,
+          longitude: parseFloat(row.lng) || 0,
         }),
       );
+    } else {
+      // Update existing merchant coordinates just in case
+      merchant.latitude = parseFloat(row.lat) || 0;
+      merchant.longitude = parseFloat(row.lng) || 0;
+      await merchantRepo.save(merchant);
     }
     merchantById.set(row.merchant_id, merchant);
   }
@@ -105,8 +116,14 @@ export async function runDatasetSeed(dataSource: DataSource): Promise<void> {
           email: null,
           passwordHash,
           isActive: true,
+          latitude: parseFloat(row.lat) || 0,
+          longitude: parseFloat(row.lng) || 0,
         }),
       );
+    } else {
+      user.latitude = parseFloat(row.lat) || 0;
+      user.longitude = parseFloat(row.lng) || 0;
+      await userRepo.save(user);
     }
     userByCsvId.set(row.user_id, user);
   }

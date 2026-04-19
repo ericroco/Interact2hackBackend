@@ -1,6 +1,11 @@
-import { IsDateString, IsNotEmpty, IsNumber, IsPositive, IsString, Length, Min } from 'class-validator';
+import { IsDateString, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, Length, Max, Min } from 'class-validator';
 
 export class CreateAcquisitionCouponDto {
+  @IsString()
+  @IsOptional()
+  @Length(1, 100)
+  name?: string;
+
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
   value: number;
@@ -16,4 +21,10 @@ export class CreateAcquisitionCouponDto {
 
   @IsDateString()
   expiresAt: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  quantity?: number;
 }

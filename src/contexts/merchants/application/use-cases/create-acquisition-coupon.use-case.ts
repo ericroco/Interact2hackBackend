@@ -22,6 +22,13 @@ export class CreateAcquisitionCouponUseCase {
     const merchant = await this.merchantRepo.findById(merchantId);
     if (!merchant) throw new NotFoundException('Merchant not found');
 
+    const activeCount = await this.couponRepo.countActiveCoupons(merchantId);
+    if (activeCount >= 5) {
+      throw new UnprocessableEntityException(
+        'Has alcanzado el límite de 5 yapas activas. Elimina una para poder crear otra.',
+      );
+    }
+
     const existing = await this.couponRepo.findByCode(dto.code);
     if (existing) throw new ConflictException('Coupon code already exists');
 
@@ -31,9 +38,12 @@ export class CreateAcquisitionCouponUseCase {
       );
     }
 
-    if (Number(merchant.couponFundingBalance) < dto.value) {
+    const qty = dto.quantity ?? 1;
+    const totalCost = dto.value * qty;
+
+    if (Number(merchant.couponFundingBalance) < totalCost) {
       throw new UnprocessableEntityException(
-        `Insufficient coupon funding balance. Available: $${merchant.couponFundingBalance}`,
+        `Insufficient coupon funding balance. Need $${totalCost.toFixed(2)}, available: $${merchant.couponFundingBalance}`,
       );
     }
 
@@ -42,13 +52,15 @@ export class CreateAcquisitionCouponUseCase {
 
     await this.merchantRepo.updateCouponFundingBalance(
       merchantId,
-      Number(merchant.couponFundingBalance) - dto.value,
+      Number(merchant.couponFundingBalance) - totalCost,
     );
 
     return this.couponRepo.save({
       merchantId,
+      name: dto.name ?? '',
       code: dto.code.toUpperCase(),
       value: dto.value,
+      quantity: qty,
       minimumTicket: dto.minimumPurchase,
       isRedeemed: false,
       redeemedBy: null,

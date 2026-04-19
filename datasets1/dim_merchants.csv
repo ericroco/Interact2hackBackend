@@ -1,51 +1,51 @@
-merchant_id,nombre,categoria,ticket_promedio,frecuencia_esperada_dias,comision_mdr,subsidy_cap_mensual,coupon_descuento
-M001,Ceviches de la Ruleta,Comida,8.98,5,0.015,164.08,2.55
-M002,Don Lucho Fritadas,Comida,6.92,4,0.015,74.54,1.12
-M003,Hornado Doña Clorinda,Comida,6.22,8,0.015,79.98,1.32
-M004,Encebollado El Puerto,Comida,3.19,3,0.015,37.23,0.67
-M005,Comedor Doña Rosita,Comida,4.45,4,0.015,47.31,1.6
-M006,Papas con Cuero Don Abel,Comida,2.87,4,0.015,34.77,0.82
-M007,Sánduches El Rapidito,Comida,3.24,1,0.015,61.17,0.55
-M008,Pollo a la Brasa Hermanos,Comida,8.22,6,0.015,106.05,1.59
-M009,Canguilero del Parque,Comida,1.92,2,0.015,33.79,2.4
-M010,Jugos Naturales Pacheco,Comida,2.06,3,0.015,31.26,2.46
-M011,Tacos y Burritos El Gringo,Comida,5.3,3,0.015,98.13,2.59
-M012,Chochos y Tostado Carmen,Comida,1.4,2,0.015,20.4,1.08
-M013,Empanadas Doña Gloria,Comida,2.62,2,0.015,40.95,1.58
-M014,Cafetería Dulce Aroma,Comida,2.39,3,0.015,47.41,1.76
-M015,Panadería San José,Comida,4.86,2,0.015,92.35,1.14
-M016,Carnes y Parrilla El Toro,Comida,10.61,6,0.015,181.76,2.32
-M017,Cevichería Don Paco Manta,Comida,8.84,3,0.015,170.71,2.0
-M018,Almuerzos Ejecutivos Silvia,Comida,3.1,2,0.015,35.35,1.31
-M019,Heladería Pingüino del Sur,Comida,1.46,4,0.015,22.75,0.55
-M020,Wok Chino Restaurante,Comida,5.66,8,0.015,104.03,2.06
-M021,Tienda Don Lucho,Víveres,1.42,3,0.015,16.58,2.52
-M022,Minimarket La Esquina,Víveres,14.85,1,0.015,209.62,2.97
-M023,Tienda El Vecino Cuenca,Víveres,6.98,2,0.015,121.92,1.91
-M024,Abarrotes Familia Morocho,Víveres,7.53,2,0.015,125.08,2.95
-M025,Verduras y Frutas Carmen,Víveres,2.72,4,0.015,36.44,2.38
-M026,Minimarket 24H El Ángel,Víveres,7.04,2,0.015,87.82,0.42
-M027,Despensa Familiar Pillajo,Víveres,13.16,4,0.015,188.13,2.97
-M028,Supermini Don Segundo,Víveres,4.18,3,0.015,76.23,1.77
-M029,Bazar y Abarrotes Lucita,Víveres,2.0,3,0.015,22.07,0.91
-M030,Tienda Escolar El Saber,Víveres,4.44,1,0.015,80.32,1.84
-M031,Distribuidora Mayorista Ruiz,Víveres,17.91,9,0.015,294.88,1.91
-M032,Despensa Económica Norte,Víveres,2.11,5,0.015,27.35,1.49
-M033,Tienda de Barrio Toapanta,Víveres,5.39,1,0.015,73.2,2.47
-M034,Minimarket Los Pinos,Víveres,6.33,3,0.015,95.93,2.1
-M035,Abarrotes Quishpe Hnos.,Víveres,4.08,4,0.015,43.44,0.92
-M036,Cooperativa Trans Milenio,Transporte,1.11,2,0.01,21.8,1.26
-M037,Taxi Ejecutivo Andino,Transporte,5.52,5,0.01,74.78,1.94
-M038,Mototaxi Expreso Sur,Transporte,2.18,2,0.01,25.98,0.52
-M039,Buseta Intercantonal Azuay,Transporte,1.29,3,0.01,19.43,0.84
-M040,Servicio Puerta a Puerta GYE,Transporte,11.97,4,0.01,158.86,1.95
-M041,Farmacia Popular Salud,Farmacia,11.38,9,0.015,211.84,1.32
-M042,Botica San Francisco,Farmacia,8.0,7,0.015,81.77,1.78
-M043,Farmacia Cruz Azul Loja,Farmacia,28.84,5,0.015,346.25,2.1
-M044,Droguería El Ahorro,Farmacia,12.33,10,0.015,189.55,2.14
-M045,Farmacia Comunitaria Norte,Farmacia,4.45,9,0.015,75.29,1.55
-M046,Botica Naturista Vida Sana,Farmacia,13.6,9,0.015,196.77,1.11
-M047,Farmacia del Barrio Caiza,Farmacia,13.63,7,0.015,144.17,1.16
-M048,Distribuidora Médica Andina,Farmacia,38.86,11,0.015,607.83,2.81
-M049,Farmacia 24H Santa Lucía,Farmacia,9.13,4,0.015,111.32,2.36
-M050,Botica Económica Cotopaxi,Farmacia,4.02,8,0.015,41.53,2.18
+merchant_id,nombre,categoria,ticket_promedio,frecuencia_esperada_dias,comision_mdr,subsidy_cap_mensual,coupon_descuento,sector_especifico,lat,lng,coordenadas,codigo_postal,punto_referencia
+M001,Ceviches de la Ruleta,Comida,8.98,5,0.015,164.08,2.55,Iñaquito,-0.170768,-78.480446,"{""lat"": -0.170768, ""lng"": -78.480446}",170505,A 1 cuadra del Parque La Carolina
+M002,Don Lucho Fritadas,Comida,6.92,4,0.015,74.54,1.12,Cotocollao,-0.11467,-78.502948,"{""lat"": -0.11467, ""lng"": -78.502948}",170507,Junto a la Iglesia de Cotocollao
+M003,Hornado Doña Clorinda,Comida,6.22,8,0.015,79.98,1.32,La Magdalena,-0.248376,-78.515839,"{""lat"": -0.248376, ""lng"": -78.515839}",170301,Junto a la Av. Mariscal Sucre
+M004,Encebollado El Puerto,Comida,3.19,3,0.015,37.23,0.67,Chimbacalle,-0.236317,-78.509679,"{""lat"": -0.236317, ""lng"": -78.509679}",170103,Junto a la Av. Napo
+M005,Comedor Doña Rosita,Comida,4.45,4,0.015,47.31,1.6,Solanda,-0.266397,-78.516933,"{""lat"": -0.266397, ""lng"": -78.516933}",170302,Junto al Estadio Rodrigo Paz (sur)
+M006,Papas con Cuero Don Abel,Comida,2.87,4,0.015,34.77,0.82,El Trébol,-0.239406,-78.503616,"{""lat"": -0.239406, ""lng"": -78.503616}",170103,Junto a la Av. Pichincha
+M007,Sánduches El Rapidito,Comida,3.24,1,0.015,61.17,0.55,La Mariscal,-0.208561,-78.496239,"{""lat"": -0.208561, ""lng"": -78.496239}",170104,Junto a la Av. Amazonas y Colón
+M008,Pollo a la Brasa Hermanos,Comida,8.22,6,0.015,106.05,1.59,Quitumbe,-0.297361,-78.526056,"{""lat"": -0.297361, ""lng"": -78.526056}",170702,Junto al Parque del Amor Quitumbe
+M009,Canguilero del Parque,Comida,1.92,2,0.015,33.79,2.4,La Carolina,-0.179993,-78.48382,"{""lat"": -0.179993, ""lng"": -78.48382}",170505,Junto al Jardín Botánico de Quito
+M010,Jugos Naturales Pacheco,Comida,2.06,3,0.015,31.26,2.46,Carcelén,-0.105041,-78.487435,"{""lat"": -0.105041, ""lng"": -78.487435}",170507,Frente al Parque de Carcelén
+M011,Tacos y Burritos El Gringo,Comida,5.3,3,0.015,98.13,2.59,La Floresta,-0.205456,-78.487054,"{""lat"": -0.205456, ""lng"": -78.487054}",170104,Junto a la Av. Isabel La Católica
+M012,Chochos y Tostado Carmen,Comida,1.4,2,0.015,20.4,1.08,Centro Histórico,-0.218943,-78.51328,"{""lat"": -0.218943, ""lng"": -78.51328}",170101,Frente a la Plaza Grande
+M013,Empanadas Doña Gloria,Comida,2.62,2,0.015,40.95,1.58,Guamaní,-0.290466,-78.522133,"{""lat"": -0.290466, ""lng"": -78.522133}",170701,A 2 cuadras del Parque Guamaní
+M014,Cafetería Dulce Aroma,Comida,2.39,3,0.015,47.41,1.76,Bellavista,-0.19092,-78.486638,"{""lat"": -0.19092, ""lng"": -78.486638}",170504,Frente al Colegio Americano
+M015,Panadería San José,Comida,4.86,2,0.015,92.35,1.14,San Juan,-0.225145,-78.51468,"{""lat"": -0.225145, ""lng"": -78.51468}",170102,A 2 cuadras del Panecillo
+M016,Carnes y Parrilla El Toro,Comida,10.61,6,0.015,181.76,2.32,El Condado,-0.121812,-78.505992,"{""lat"": -0.121812, ""lng"": -78.505992}",170507,Frente al Parque El Condado
+M017,Cevichería Don Paco Manta,Comida,8.84,3,0.015,170.71,2.0,Jipijapa,-0.165274,-78.480063,"{""lat"": -0.165274, ""lng"": -78.480063}",170505,Junto al Parque Jipijapa
+M018,Almuerzos Ejecutivos Silvia,Comida,3.1,2,0.015,35.35,1.31,El Batan,-0.18317,-78.475492,"{""lat"": -0.18317, ""lng"": -78.475492}",170504,A 1 cuadra de la Av. Eloy Alfaro
+M019,Heladería Pingüino del Sur,Comida,1.46,4,0.015,22.75,0.55,Turubamba,-0.284831,-78.524456,"{""lat"": -0.284831, ""lng"": -78.524456}",170702,Frente al Parque Turubamba
+M020,Wok Chino Restaurante,Comida,5.66,8,0.015,104.03,2.06,La Mariscal,-0.207627,-78.49369,"{""lat"": -0.207627, ""lng"": -78.49369}",170104,A 2 cuadras del Parque El Ejido
+M021,Tienda Don Lucho,Víveres,1.42,3,0.015,16.58,2.52,Chillogallo,-0.271711,-78.521527,"{""lat"": -0.271711, ""lng"": -78.521527}",170302,Frente al Parque Chillogallo
+M022,Minimarket La Esquina,Víveres,14.85,1,0.015,209.62,2.97,La Ecuatoriana,-0.276716,-78.520265,"{""lat"": -0.276716, ""lng"": -78.520265}",170701,Frente al Parque La Ecuatoriana
+M023,Tienda El Vecino Cuenca,Víveres,6.98,2,0.015,121.92,1.91,Carapungo,-0.103938,-78.443099,"{""lat"": -0.103938, ""lng"": -78.443099}",170803,Junto a la Parada de Buses Carapungo
+M024,Abarrotes Familia Morocho,Víveres,7.53,2,0.015,125.08,2.95,Conocoto,-0.289203,-78.460421,"{""lat"": -0.289203, ""lng"": -78.460421}",170601,Junto a la Av. General Rumiñahui
+M025,Verduras y Frutas Carmen,Víveres,2.72,4,0.015,36.44,2.38,Iñaquito,-0.170789,-78.479336,"{""lat"": -0.170789, ""lng"": -78.479336}",170505,Frente al CCI (Centro Comercial Iñaquito)
+M026,Minimarket 24H El Ángel,Víveres,7.04,2,0.015,87.82,0.42,Quito Tennis,-0.174216,-78.482744,"{""lat"": -0.174216, ""lng"": -78.482744}",170504,Junto al CC Multicentro
+M027,Despensa Familiar Pillajo,Víveres,13.16,4,0.015,188.13,2.97,El Recreo,-0.259735,-78.513008,"{""lat"": -0.259735, ""lng"": -78.513008}",170302,Junto al Mercado El Recreo
+M028,Supermini Don Segundo,Víveres,4.18,3,0.015,76.23,1.77,Quitumbe,-0.298301,-78.527047,"{""lat"": -0.298301, ""lng"": -78.527047}",170702,Frente al CC Quicentro Sur
+M029,Bazar y Abarrotes Lucita,Víveres,2.0,3,0.015,22.07,0.91,Solanda,-0.264617,-78.519694,"{""lat"": -0.264617, ""lng"": -78.519694}",170302,A 2 cuadras del Parque de Solanda
+M030,Tienda Escolar El Saber,Víveres,4.44,1,0.015,80.32,1.84,Centro Histórico,-0.220181,-78.511071,"{""lat"": -0.220181, ""lng"": -78.511071}",170101,Junto al Palacio de Gobierno
+M031,Distribuidora Mayorista Ruiz,Víveres,17.91,9,0.015,294.88,1.91,Cumbayá,-0.183728,-78.438575,"{""lat"": -0.183728, ""lng"": -78.438575}",170901,A 2 cuadras del CC Paseo San Francisco
+M032,Despensa Económica Norte,Víveres,2.11,5,0.015,27.35,1.49,Carcelén,-0.1078,-78.489476,"{""lat"": -0.1078, ""lng"": -78.489476}",170507,Frente al Parque de Carcelén
+M033,Tienda de Barrio Toapanta,Víveres,5.39,1,0.015,73.2,2.47,Turubamba,-0.285613,-78.524309,"{""lat"": -0.285613, ""lng"": -78.524309}",170702,Junto a la Av. Morán Valverde
+M034,Minimarket Los Pinos,Víveres,6.33,3,0.015,95.93,2.1,Tumbaco,-0.206504,-78.43,"{""lat"": -0.206504, ""lng"": -78.43}",170902,A 1 cuadra del Mercado de Tumbaco
+M035,Abarrotes Quishpe Hnos.,Víveres,4.08,4,0.015,43.44,0.92,La Vicentina,-0.214027,-78.49805,"{""lat"": -0.214027, ""lng"": -78.49805}",170104,A 2 cuadras de la PUCE
+M036,Cooperativa Trans Milenio,Transporte,1.11,2,0.01,21.8,1.26,Chimbacalle,-0.233583,-78.509715,"{""lat"": -0.233583, ""lng"": -78.509715}",170103,Junto a la Av. Napo
+M037,Taxi Ejecutivo Andino,Transporte,5.52,5,0.01,74.78,1.94,La Floresta,-0.205775,-78.485534,"{""lat"": -0.205775, ""lng"": -78.485534}",170104,Junto a la Av. Isabel La Católica
+M038,Mototaxi Expreso Sur,Transporte,2.18,2,0.01,25.98,0.52,Guamaní,-0.290692,-78.522605,"{""lat"": -0.290692, ""lng"": -78.522605}",170701,A 2 cuadras del Parque Guamaní
+M039,Buseta Intercantonal Azuay,Transporte,1.29,3,0.01,19.43,0.84,El Trébol,-0.239295,-78.504615,"{""lat"": -0.239295, ""lng"": -78.504615}",170103,A 2 cuadras del Estadio Atahualpa
+M040,Servicio Puerta a Puerta GYE,Transporte,11.97,4,0.01,158.86,1.95,La Mariscal,-0.207335,-78.494531,"{""lat"": -0.207335, ""lng"": -78.494531}",170104,A 2 cuadras del Parque El Ejido
+M041,Farmacia Popular Salud,Farmacia,11.38,9,0.015,211.84,1.32,La Carolina,-0.1796,-78.485245,"{""lat"": -0.1796, ""lng"": -78.485245}",170505,A 2 cuadras del Estadio Olímpico
+M042,Botica San Francisco,Farmacia,8.0,7,0.015,81.77,1.78,Centro Histórico,-0.2193,-78.511605,"{""lat"": -0.2193, ""lng"": -78.511605}",170101,Frente a la Plaza Grande
+M043,Farmacia Cruz Azul Loja,Farmacia,28.84,5,0.015,346.25,2.1,Bellavista,-0.190415,-78.487452,"{""lat"": -0.190415, ""lng"": -78.487452}",170504,Junto a la Av. 12 de Octubre
+M044,Droguería El Ahorro,Farmacia,12.33,10,0.015,189.55,2.14,El Condado,-0.118809,-78.503274,"{""lat"": -0.118809, ""lng"": -78.503274}",170507,A 3 cuadras del Condado Shopping
+M045,Farmacia Comunitaria Norte,Farmacia,4.45,9,0.015,75.29,1.55,Cotocollao,-0.115635,-78.501025,"{""lat"": -0.115635, ""lng"": -78.501025}",170507,Junto a la Iglesia de Cotocollao
+M046,Botica Naturista Vida Sana,Farmacia,13.6,9,0.015,196.77,1.11,La Floresta,-0.205839,-78.487044,"{""lat"": -0.205839, ""lng"": -78.487044}",170104,Frente al CC El Jardín
+M047,Farmacia del Barrio Caiza,Farmacia,13.63,7,0.015,144.17,1.16,Solanda,-0.266712,-78.51807,"{""lat"": -0.266712, ""lng"": -78.51807}",170302,Frente al Mercado Solanda
+M048,Distribuidora Médica Andina,Farmacia,38.86,11,0.015,607.83,2.81,Iñaquito,-0.16965,-78.479058,"{""lat"": -0.16965, ""lng"": -78.479058}",170505,Junto a la Av. Amazonas y Naciones Unidas
+M049,Farmacia 24H Santa Lucía,Farmacia,9.13,4,0.015,111.32,2.36,El Ejido,-0.209908,-78.492797,"{""lat"": -0.209908, ""lng"": -78.492797}",170104,A 1 cuadra de la Casa de la Cultura
+M050,Botica Económica Cotopaxi,Farmacia,4.02,8,0.015,41.53,2.18,Quitumbe,-0.296491,-78.527176,"{""lat"": -0.296491, ""lng"": -78.527176}",170702,A 2 cuadras del Terminal Quitumbe

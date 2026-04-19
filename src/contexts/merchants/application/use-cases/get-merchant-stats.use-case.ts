@@ -7,6 +7,7 @@ export interface MerchantStats {
   businessName: string;
   averageTicket: number;
   couponFundingBalance: number;
+  loyaltyEnabled: boolean;
   tierDistribution: { tier1: number; tier2: number; tier3: number };
   activeLoyaltyCoupons: number;
   totalCompletedTransactions: number;
@@ -55,9 +56,10 @@ export class GetMerchantStatsUseCase {
 
     const tierDist = { tier1: 0, tier2: 0, tier3: 0 };
     for (const row of tierRows) {
-      if (row.tier_level === '1') tierDist.tier1 = Number(row.count);
-      else if (row.tier_level === '2') tierDist.tier2 = Number(row.count);
-      else if (row.tier_level === '3') tierDist.tier3 = Number(row.count);
+      const level = String(row.tier_level);
+      if (level === '1') tierDist.tier1 = Number(row.count);
+      else if (level === '2') tierDist.tier2 = Number(row.count);
+      else if (level === '3') tierDist.tier3 = Number(row.count);
     }
 
     return {
@@ -65,6 +67,7 @@ export class GetMerchantStatsUseCase {
       businessName: merchant.businessName,
       averageTicket: Number(merchant.averageTicket),
       couponFundingBalance: Number(merchant.couponFundingBalance),
+      loyaltyEnabled: merchant.loyaltyEnabled,
       tierDistribution: tierDist,
       activeLoyaltyCoupons: Number(couponCount[0]?.count ?? 0),
       totalCompletedTransactions: Number(txRows[0]?.count ?? 0),

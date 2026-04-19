@@ -1,101 +1,101 @@
-user_id,nombre_completo,ciudad,nivel_lealtad_inicial,puntos_acumulados,fecha_ultima_tx,saldo_yapas_disponible
-09228431069,Carlos Quishpe,Quito,1,93.94,2025-06-04,0.2188
-09133462959,María Andrade,Quito,2,486.5,2025-06-12,2.0324
-09154618999,Luis Morocho,Quito,1,59.04,2025-05-20,0.2915
-09518055247,Rosa Chimborazo,Quito,2,480.34,2025-06-09,3.199
-09723314897,Jorge Toapanta,Quito,1,20.63,2025-06-04,0.0682
-09532734158,Ana Pilataxi,Quito,3,747.47,2025-05-29,5.5326
-09562779578,Pedro Guamán,Quito,2,394.9,2025-05-23,2.3686
-09828197679,Carmen Llumigusin,Quito,2,204.21,2025-05-22,1.1882
-09531805601,Diego Sangoluisa,Quito,1,109.13,2025-06-11,0.8267
-09626421369,Lucía Caisaguano,Quito,1,61.41,2025-06-13,0.3286
-09203012859,Andrés Tigasi,Quito,2,241.94,2025-06-07,1.1439
-09174461385,Patricia Iza,Quito,1,165.54,2025-06-13,0.3377
-09536518206,Sebastián Pallo,Quito,2,244.39,2025-06-05,1.9436
-09726883402,Verónica Cujilema,Quito,1,113.72,2025-06-07,0.5011
-09596427717,Fernando Yupanqui,Quito,2,277.36,2025-06-03,0.7462
-09269127413,Gloria Tenelema,Quito,3,714.99,2025-06-01,3.1063
-09504474768,Marco Caiza,Quito,1,72.1,2025-06-10,0.3177
-09485507144,Silvia Chasipanta,Quito,1,164.14,2025-06-04,0.5023
-09832191793,Jhonatan Masaquiza,Quito,3,843.97,2025-06-14,6.328
-09231263226,Elena Puruncajas,Quito,3,611.79,2025-05-19,4.2821
-09823806942,Roberto Lligalo,Quito,1,143.23,2025-06-02,0.8391
-09779601046,Mariana Punina,Quito,2,406.97,2025-06-14,3.1153
-09892683590,Xavier Ante,Quito,1,36.91,2025-06-11,0.1852
-09196479920,Cristina Catota,Quito,1,56.97,2025-06-01,0.182
-09632663282,Fabián Cuji,Quito,2,252.79,2025-06-10,0.9079
-09492632248,Dolores Naula,Quito,3,594.24,2025-06-02,2.5078
-09612625282,Edwin Saquipay,Quito,1,179.33,2025-06-11,0.7909
-09734696263,Natividad Guaraca,Quito,1,190.1,2025-06-13,1.1558
-09801269695,Stalin Criollo,Quito,2,449.13,2025-05-22,2.6071
-09329164530,Blanca Paucar,Quito,1,163.21,2025-05-25,1.1508
-09441762383,Lenin Auquilla,Quito,3,594.6,2025-05-26,1.9031
-09991206991,Mercy Chila,Quito,1,18.63,2025-06-06,0.1468
-09576538319,Wilmer Tandazo,Quito,1,59.27,2025-06-12,0.1999
-09661495377,Esperanza Rivadeneira,Quito,2,436.9,2025-05-29,1.3973
-09796929262,Klever Coronel,Quito,3,664.85,2025-05-30,1.9674
-09902389876,Amparo Bermeo,Guayaquil,3,600.4,2025-06-10,4.4476
-09322932778,Geovanny Astudillo,Guayaquil,1,188.51,2025-05-27,1.0763
-09113148622,Narcisa Ortega,Guayaquil,1,16.7,2025-06-04,0.0538
-09912278707,Bladimir Encalada,Guayaquil,1,70.8,2025-06-08,0.4789
-09568452344,Tránsito Morocho,Guayaquil,1,55.71,2025-06-06,0.3412
-09465698729,Héctor Armijos,Guayaquil,2,387.51,2025-06-02,2.4304
-09686906577,Miriam Bustamante,Guayaquil,1,178.92,2025-06-10,0.597
-09476551555,Oscar Cárdenas,Guayaquil,3,757.4,2025-06-05,2.0762
-09341818369,Fanny Dávila,Guayaquil,1,128.43,2025-06-09,0.4587
-09498815221,Ramiro Escobar,Guayaquil,1,56.93,2025-05-31,0.3547
-09825332167,Luz Flores,Guayaquil,2,458.96,2025-06-11,2.8254
-09894384688,Iván Granda,Guayaquil,1,136.18,2025-05-26,0.2952
-09134078943,Susana Herrera,Guayaquil,1,72.91,2025-06-01,0.499
-09765009951,Byron Intriago,Guayaquil,3,680.46,2025-05-19,2.2996
-09382335131,Karina Jaramillo,Guayaquil,2,460.06,2025-06-08,3.3665
-09974816609,Mauricio Lema,Guayaquil,2,311.42,2025-06-08,0.6738
-09779724107,Pilar Mejía,Guayaquil,2,325.16,2025-06-08,1.4592
-09623128000,Nelson Naranjo,Guayaquil,1,79.0,2025-06-07,0.4605
-09449123246,Olga Ortiz,Guayaquil,2,445.6,2025-05-25,3.5176
-09958677439,Patricio Peñafiel,Guayaquil,1,108.59,2025-06-14,0.4545
-09203181576,Rocío Quiroz,Guayaquil,1,75.15,2025-05-22,0.4985
-09249173082,Simón Romero,Guayaquil,1,182.91,2025-05-26,0.5704
-09928436204,Teresa Samaniego,Guayaquil,2,279.8,2025-06-07,1.1548
-09333056896,Ulises Torres,Guayaquil,3,781.17,2025-05-28,5.1774
-09588316573,Valeria Urgiles,Guayaquil,3,806.93,2025-05-25,2.2101
-09905358487,William Vásquez,Guayaquil,1,182.39,2025-05-24,1.1429
-09772526116,Ximena Yánez,Guayaquil,3,892.9,2025-05-31,4.8981
-09777289927,Yolanda Zamora,Guayaquil,1,91.62,2025-06-07,0.6831
-09263818630,Abel Alvarado,Guayaquil,1,46.22,2025-06-12,0.3482
-09889654250,Beatriz Barros,Guayaquil,1,157.26,2025-06-07,1.018
-09256197949,César Cabrera,Cuenca,2,284.81,2025-06-13,2.2616
-09821375263,Diana Delgado,Cuenca,1,116.93,2025-05-28,0.5409
-09616818257,Ernesto Espinoza,Cuenca,2,264.63,2025-06-08,0.7375
-09551482297,Fernanda Figueroa,Cuenca,3,628.77,2025-06-07,3.4284
-09157485662,Gonzalo Gómez,Cuenca,1,100.11,2025-06-07,0.2027
-09682835839,Hilda Hidalgo,Cuenca,2,343.8,2025-06-09,0.9782
-09438942028,Isidro Idrovo,Cuenca,1,76.15,2025-05-19,0.2339
-09971475669,Jacinta Jiménez,Cuenca,3,847.68,2025-05-25,1.699
-09479091536,Kevin Loja,Cuenca,1,38.3,2025-06-08,0.1768
-09916076536,Laura López,Cuenca,2,202.7,2025-05-31,1.1112
-09636672559,Miguel Montero,Cuenca,1,41.58,2025-05-29,0.2936
-09423979146,Nancy Nivelo,Cuenca,2,491.42,2025-06-12,3.6012
-09721403732,Patricio Ordóñez,Cuenca,3,735.54,2025-05-21,4.2936
-09738228582,Querubina Pereira,Cuenca,3,642.69,2025-06-12,3.1038
-09806772232,Rodrigo Rivas,Cuenca,1,55.22,2025-06-14,0.2113
-09591274422,Sandra Salcedo,Cuenca,2,374.29,2025-05-10,0.9116
-09375584674,Tomás Tapia,Cuenca,1,196.71,2025-04-18,0.4893
-09977913143,Úrsula Ulloa,Cuenca,3,802.12,2025-04-30,3.0671
-09371441656,Víctor Valarezo,Cuenca,1,2.91,2025-04-27,0.0227
-09119795638,Wendy Morocho,Cuenca,1,176.83,2025-04-30,0.4175
-09693891734,Yadira Arias,Loja,1,48.52,2025-04-18,0.1504
-09749505652,Zoila Bustamante,Loja,2,261.35,2025-04-30,0.6409
-09726104989,Aldo Calle,Loja,2,203.83,2025-05-05,0.7032
-09417757928,Bertha Cañar,Loja,1,65.17,2025-05-01,0.2142
-09426561627,Camilo Contreras,Loja,1,74.14,2025-04-19,0.3542
-09174032680,Dayana Duchi,Loja,2,355.79,2025-05-11,2.3603
-09764996186,Edgar Encalada,Loja,2,426.68,2025-04-25,2.1971
-09547571981,Flor Fajardo,Loja,2,403.01,2025-05-02,2.7106
-09921615303,Gustavo Guamán,Loja,3,897.54,2025-04-24,4.7314
-09305763500,Hortensia Heredia,Loja,1,138.83,2025-04-28,0.47
-09603794938,Ignacio Iñiguez,Loja,1,36.03,2025-05-08,0.1578
-09126911160,Jéssica Jaigua,Loja,1,59.37,2025-05-01,0.347
-09663101570,Katherin Llivicura,Loja,1,133.39,2025-05-06,0.5266
-09462744046,Lorenzo Macas,Loja,2,357.45,2025-05-03,2.7971
-09834315307,Martha Mora,Loja,3,654.99,2025-05-06,4.5843
+user_id,nombre_completo,ciudad,sector_especifico,lat,lng,coordenadas,codigo_postal,punto_referencia,nivel_lealtad_inicial,puntos_acumulados,fecha_ultima_tx,saldo_yapas_disponible
+9228431069,Carlos Quishpe,Quito,Cumbayá,-0.182739,-78.437452,"{""lat"": -0.182739, ""lng"": -78.437452}",170901,Frente al Parque Central de Cumbayá,1,93.94,2025-06-04,0.2188
+9133462959,María Andrade,Quito,El Recreo,-0.25976,-78.513018,"{""lat"": -0.25976, ""lng"": -78.513018}",170302,Frente a la Estación El Recreo (Trole),2,486.5,2025-06-12,2.0324
+9154618999,Luis Morocho,Quito,Cumbayá,-0.180363,-78.439753,"{""lat"": -0.180363, ""lng"": -78.439753}",170901,Frente al Parque Central de Cumbayá,1,59.04,2025-05-20,0.2915
+9518055247,Rosa Chimborazo,Quito,El Batan,-0.183402,-78.476214,"{""lat"": -0.183402, ""lng"": -78.476214}",170504,Frente al Supermaxi El Batán,2,480.34,2025-06-09,3.199
+9723314897,Jorge Toapanta,Quito,La Floresta,-0.205576,-78.487191,"{""lat"": -0.205576, ""lng"": -78.487191}",170104,Junto a la Av. Isabel La Católica,1,20.63,2025-06-04,0.0682
+9532734158,Ana Pilataxi,Quito,El Ejido,-0.209723,-78.491732,"{""lat"": -0.209723, ""lng"": -78.491732}",170104,Frente al Parque El Ejido,3,747.47,2025-05-29,5.5326
+9562779578,Pedro Guamán,Quito,La Ecuatoriana,-0.27417,-78.52185,"{""lat"": -0.27417, ""lng"": -78.52185}",170701,Frente al Parque La Ecuatoriana,2,394.9,2025-05-23,2.3686
+9828197679,Carmen Llumigusin,Quito,Bellavista,-0.189792,-78.486393,"{""lat"": -0.189792, ""lng"": -78.486393}",170504,Junto a la Av. 12 de Octubre,2,204.21,2025-05-22,1.1882
+9531805601,Diego Sangoluisa,Quito,El Trébol,-0.241769,-78.505098,"{""lat"": -0.241769, ""lng"": -78.505098}",170103,Frente al Intercambiador El Trébol,1,109.13,2025-06-11,0.8267
+9626421369,Lucía Caisaguano,Quito,Carapungo,-0.106406,-78.445116,"{""lat"": -0.106406, ""lng"": -78.445116}",170803,A 2 cuadras del Parque de Carapungo,1,61.41,2025-06-13,0.3286
+9203012859,Andrés Tigasi,Quito,La Floresta,-0.204158,-78.486524,"{""lat"": -0.204158, ""lng"": -78.486524}",170104,Junto a la Av. Isabel La Católica,2,241.94,2025-06-07,1.1439
+9174461385,Patricia Iza,Quito,La Floresta,-0.205331,-78.486918,"{""lat"": -0.205331, ""lng"": -78.486918}",170104,Junto a la Av. Isabel La Católica,1,165.54,2025-06-13,0.3377
+9536518206,Sebastián Pallo,Quito,La Carolina,-0.1825,-78.484231,"{""lat"": -0.1825, ""lng"": -78.484231}",170505,Frente al Parque La Carolina,2,244.39,2025-06-05,1.9436
+9726883402,Verónica Cujilema,Quito,Conocoto,-0.290312,-78.460047,"{""lat"": -0.290312, ""lng"": -78.460047}",170601,Frente al Parque Central de Conocoto,1,113.72,2025-06-07,0.5011
+9596427717,Fernando Yupanqui,Quito,El Ejido,-0.210747,-78.492569,"{""lat"": -0.210747, ""lng"": -78.492569}",170104,Frente al Parque El Ejido,2,277.36,2025-06-03,0.7462
+9269127413,Gloria Tenelema,Quito,Chillogallo,-0.269996,-78.519613,"{""lat"": -0.269996, ""lng"": -78.519613}",170302,Junto a la Av. Mariscal Sucre km 8,3,714.99,2025-06-01,3.1063
+9504474768,Marco Caiza,Quito,Carcelén,-0.103421,-78.490184,"{""lat"": -0.103421, ""lng"": -78.490184}",170507,A 2 cuadras del Terminal Carcelén,1,72.1,2025-06-10,0.3177
+9485507144,Silvia Chasipanta,Quito,Conocoto,-0.288408,-78.459456,"{""lat"": -0.288408, ""lng"": -78.459456}",170601,Junto a la Av. General Rumiñahui,1,164.14,2025-06-04,0.5023
+9832191793,Jhonatan Masaquiza,Quito,Chillogallo,-0.268977,-78.519464,"{""lat"": -0.268977, ""lng"": -78.519464}",170302,Frente al Parque Chillogallo,3,843.97,2025-06-14,6.328
+9231263226,Elena Puruncajas,Quito,La Magdalena,-0.250857,-78.51548,"{""lat"": -0.250857, ""lng"": -78.51548}",170301,Junto a la Av. Mariscal Sucre,3,611.79,2025-05-19,4.2821
+9823806942,Roberto Lligalo,Quito,El Recreo,-0.258922,-78.514561,"{""lat"": -0.258922, ""lng"": -78.514561}",170302,Frente a la Estación El Recreo (Trole),1,143.23,2025-06-02,0.8391
+9779601046,Mariana Punina,Quito,La Ecuatoriana,-0.274264,-78.51961,"{""lat"": -0.274264, ""lng"": -78.51961}",170701,Junto a la Av. Mariscal Sucre km 10,2,406.97,2025-06-14,3.1153
+9892683590,Xavier Ante,Quito,Tumbaco,-0.205932,-78.411397,"{""lat"": -0.205932, ""lng"": -78.411397}",170902,Junto a la Av. Interoceánica km 18,1,36.91,2025-06-11,0.1852
+9196479920,Cristina Catota,Quito,Centro Histórico,-0.219118,-78.513013,"{""lat"": -0.219118, ""lng"": -78.513013}",170101,A 1 cuadra de la Iglesia La Compañía,1,56.97,2025-06-01,0.182
+9632663282,Fabián Cuji,Quito,Bellavista,-0.18988,-78.486068,"{""lat"": -0.18988, ""lng"": -78.486068}",170504,Junto a la Av. 12 de Octubre,2,252.79,2025-06-10,0.9079
+9492632248,Dolores Naula,Quito,El Recreo,-0.259784,-78.513375,"{""lat"": -0.259784, ""lng"": -78.513375}",170302,Frente a la Estación El Recreo (Trole),3,594.24,2025-06-02,2.5078
+9612625282,Edwin Saquipay,Quito,Bellavista,-0.190019,-78.487663,"{""lat"": -0.190019, ""lng"": -78.487663}",170504,A 2 cuadras del CC Quicentro Shopping,1,179.33,2025-06-11,0.7909
+9734696263,Natividad Guaraca,Quito,Calderón,-0.09281,-78.43837,"{""lat"": -0.09281, ""lng"": -78.43837}",170801,Frente al Parque Central de Calderón,1,190.1,2025-06-13,1.1558
+9801269695,Stalin Criollo,Quito,Quitumbe,-0.296292,-78.524889,"{""lat"": -0.296292, ""lng"": -78.524889}",170702,A 2 cuadras del Terminal Quitumbe,2,449.13,2025-05-22,2.6071
+9329164530,Blanca Paucar,Quito,Conocoto,-0.289965,-78.459933,"{""lat"": -0.289965, ""lng"": -78.459933}",170601,Junto a la Av. General Rumiñahui,1,163.21,2025-05-25,1.1508
+9441762383,Lenin Auquilla,Quito,La Vicentina,-0.214975,-78.496893,"{""lat"": -0.214975, ""lng"": -78.496893}",170104,A 2 cuadras de la PUCE,3,594.6,2025-05-26,1.9031
+9991206991,Mercy Chila,Quito,La Carolina,-0.180758,-78.485698,"{""lat"": -0.180758, ""lng"": -78.485698}",170505,Frente al Parque La Carolina,1,18.63,2025-06-06,0.1468
+9576538319,Wilmer Tandazo,Quito,Carcelén,-0.106316,-78.489759,"{""lat"": -0.106316, ""lng"": -78.489759}",170507,Junto a la Estación Metro Carcelén,1,59.27,2025-06-12,0.1999
+9661495377,Esperanza Rivadeneira,Quito,El Condado,-0.121261,-78.505767,"{""lat"": -0.121261, ""lng"": -78.505767}",170507,A 3 cuadras del Condado Shopping,2,436.9,2025-05-29,1.3973
+9796929262,Klever Coronel,Quito,Chimbacalle,-0.235478,-78.510135,"{""lat"": -0.235478, ""lng"": -78.510135}",170103,Frente al Mercado Chimbacalle,3,664.85,2025-05-30,1.9674
+9902389876,Amparo Bermeo,Guayaquil,Bastión Popular,-2.09042,-79.931229,"{""lat"": -2.09042, ""lng"": -79.931229}",090601,Frente al Mercado Bastión Popular,3,600.4,2025-06-10,4.4476
+9322932778,Geovanny Astudillo,Guayaquil,La Garzota,-2.129257,-79.908295,"{""lat"": -2.129257, ""lng"": -79.908295}",090401,Junto a la Av. Carlos Julio Arosemena,1,188.51,2025-05-27,1.0763
+9113148622,Narcisa Ortega,Guayaquil,La Garzota,-2.129859,-79.909749,"{""lat"": -2.129859, ""lng"": -79.909749}",090401,Junto a la Av. Carlos Julio Arosemena,1,16.7,2025-06-04,0.0538
+9912278707,Bladimir Encalada,Guayaquil,Sauces,-2.124369,-79.904992,"{""lat"": -2.124369, ""lng"": -79.904992}",090401,Frente al Parque Sauces 9,1,70.8,2025-06-08,0.4789
+9568452344,Tránsito Morocho,Guayaquil,Mapasingue,-2.103977,-79.918294,"{""lat"": -2.103977, ""lng"": -79.918294}",090401,Junto a la Av. Juan Tanca Marengo,1,55.71,2025-06-06,0.3412
+9465698729,Héctor Armijos,Guayaquil,Urdesa,-2.149826,-79.904984,"{""lat"": -2.149826, ""lng"": -79.904984}",090505,Frente al Parque Urdesa Central,2,387.51,2025-06-02,2.4304
+9686906577,Miriam Bustamante,Guayaquil,Centro de Guayaquil,-2.187992,-79.888513,"{""lat"": -2.187992, ""lng"": -79.888513}",090101,A 1 cuadra del Palacio Municipal,1,178.92,2025-06-10,0.597
+9476551555,Oscar Cárdenas,Guayaquil,La Garzota,-2.12996,-79.907958,"{""lat"": -2.12996, ""lng"": -79.907958}",090401,Junto a la Av. Carlos Julio Arosemena,3,757.4,2025-06-05,2.0762
+9341818369,Fanny Dávila,Guayaquil,Los Ceibos,-2.121852,-79.911378,"{""lat"": -2.121852, ""lng"": -79.911378}",090505,Frente al Parque Los Ceibos,1,128.43,2025-06-09,0.4587
+9498815221,Ramiro Escobar,Guayaquil,Sauces,-2.126154,-79.906434,"{""lat"": -2.126154, ""lng"": -79.906434}",090401,Frente al Parque Sauces 9,1,56.93,2025-05-31,0.3547
+9825332167,Luz Flores,Guayaquil,Mapasingue,-2.105689,-79.919741,"{""lat"": -2.105689, ""lng"": -79.919741}",090401,Junto a la Av. Juan Tanca Marengo,2,458.96,2025-06-11,2.8254
+9894384688,Iván Granda,Guayaquil,Durán,-2.169016,-79.830121,"{""lat"": -2.169016, ""lng"": -79.830121}",092301,Junto al Terminal de Durán,1,136.18,2025-05-26,0.2952
+9134078943,Susana Herrera,Guayaquil,La Garzota,-2.12952,-79.909077,"{""lat"": -2.12952, ""lng"": -79.909077}",090401,Junto a la Av. Carlos Julio Arosemena,1,72.91,2025-06-01,0.499
+9765009951,Byron Intriago,Guayaquil,Centro de Guayaquil,-2.190407,-79.891283,"{""lat"": -2.190407, ""lng"": -79.891283}",090101,A 1 cuadra del Palacio Municipal,3,680.46,2025-05-19,2.2996
+9382335131,Karina Jaramillo,Guayaquil,Centro de Guayaquil,-2.187237,-79.889353,"{""lat"": -2.187237, ""lng"": -79.889353}",090101,Frente al Malecón 2000,2,460.06,2025-06-08,3.3665
+9974816609,Mauricio Lema,Guayaquil,Kennedy,-2.133808,-79.900941,"{""lat"": -2.133808, ""lng"": -79.900941}",090505,Junto a la Av. Kennedy,2,311.42,2025-06-08,0.6738
+9779724107,Pilar Mejía,Guayaquil,Kennedy,-2.132,-79.901067,"{""lat"": -2.132, ""lng"": -79.901067}",090505,A 2 cuadras del CC Mall del Sol,2,325.16,2025-06-08,1.4592
+9623128000,Nelson Naranjo,Guayaquil,Los Ceibos,-2.120056,-79.910119,"{""lat"": -2.120056, ""lng"": -79.910119}",090505,Frente al Parque Los Ceibos,1,79.0,2025-06-07,0.4605
+9449123246,Olga Ortiz,Guayaquil,Urdesa,-2.148522,-79.906066,"{""lat"": -2.148522, ""lng"": -79.906066}",090505,Junto a la Av. Víctor Emilio Estrada,2,445.6,2025-05-25,3.5176
+9958677439,Patricio Peñafiel,Guayaquil,Los Ceibos,-2.11962,-79.910934,"{""lat"": -2.11962, ""lng"": -79.910934}",090505,Frente al Parque Los Ceibos,1,108.59,2025-06-14,0.4545
+9203181576,Rocío Quiroz,Guayaquil,Urdesa,-2.152661,-79.905073,"{""lat"": -2.152661, ""lng"": -79.905073}",090505,Junto a la Av. Víctor Emilio Estrada,1,75.15,2025-05-22,0.4985
+9249173082,Simón Romero,Guayaquil,Centro de Guayaquil,-2.190567,-79.890616,"{""lat"": -2.190567, ""lng"": -79.890616}",090101,Frente al Malecón 2000,1,182.91,2025-05-26,0.5704
+9928436204,Teresa Samaniego,Guayaquil,Alborada,-2.110229,-79.919176,"{""lat"": -2.110229, ""lng"": -79.919176}",090401,Junto a la Av. Rodolfo Baquerizo Nazur,2,279.8,2025-06-07,1.1548
+9333056896,Ulises Torres,Guayaquil,Urdesa,-2.149931,-79.905515,"{""lat"": -2.149931, ""lng"": -79.905515}",090505,Junto a la Av. Víctor Emilio Estrada,3,781.17,2025-05-28,5.1774
+9588316573,Valeria Urgiles,Guayaquil,Alborada,-2.111182,-79.918394,"{""lat"": -2.111182, ""lng"": -79.918394}",090401,A 2 cuadras del Parque Alborada,3,806.93,2025-05-25,2.2101
+9905358487,William Vásquez,Guayaquil,Los Ceibos,-2.118781,-79.911761,"{""lat"": -2.118781, ""lng"": -79.911761}",090505,Junto a la Av. Francisco de Orellana,1,182.39,2025-05-24,1.1429
+9772526116,Ximena Yánez,Guayaquil,Kennedy,-2.135527,-79.900158,"{""lat"": -2.135527, ""lng"": -79.900158}",090505,Junto a la Av. Kennedy,3,892.9,2025-05-31,4.8981
+9777289927,Yolanda Zamora,Guayaquil,Alborada,-2.112351,-79.918418,"{""lat"": -2.112351, ""lng"": -79.918418}",090401,A 2 cuadras del Parque Alborada,1,91.62,2025-06-07,0.6831
+9263818630,Abel Alvarado,Guayaquil,La Garzota,-2.131649,-79.910128,"{""lat"": -2.131649, ""lng"": -79.910128}",090401,Junto a la Av. Carlos Julio Arosemena,1,46.22,2025-06-12,0.3482
+9889654250,Beatriz Barros,Guayaquil,Mapasingue,-2.104226,-79.918588,"{""lat"": -2.104226, ""lng"": -79.918588}",090401,A 2 cuadras del Parque Mapasingue,1,157.26,2025-06-07,1.018
+9256197949,César Cabrera,Cuenca,Yanuncay,-2.919143,-79.019751,"{""lat"": -2.919143, ""lng"": -79.019751}",010103,Junto a la Av. 12 de Abril,2,284.81,2025-06-13,2.2616
+9821375263,Diana Delgado,Cuenca,Totoracocha,-2.889689,-78.989767,"{""lat"": -2.889689, ""lng"": -78.989767}",010204,A 2 cuadras del Parque Totoracocha,1,116.93,2025-05-28,0.5409
+9616818257,Ernesto Espinoza,Cuenca,El Ejido Cuenca,-2.911169,-79.003702,"{""lat"": -2.911169, ""lng"": -79.003702}",010102,Frente al Estadio Alejandro Serrano,2,264.63,2025-06-08,0.7375
+9551482297,Fernanda Figueroa,Cuenca,Totoracocha,-2.889408,-78.989123,"{""lat"": -2.889408, ""lng"": -78.989123}",010204,A 2 cuadras del Parque Totoracocha,3,628.77,2025-06-07,3.4284
+9157485662,Gonzalo Gómez,Cuenca,El Centro Cuenca,-2.897381,-79.002301,"{""lat"": -2.897381, ""lng"": -79.002301}",010101,A 1 cuadra de la Catedral Nueva,1,100.11,2025-06-07,0.2027
+9682835839,Hilda Hidalgo,Cuenca,Totoracocha,-2.890516,-78.989312,"{""lat"": -2.890516, ""lng"": -78.989312}",010204,Junto a la Av. España,2,343.8,2025-06-09,0.9782
+9438942028,Isidro Idrovo,Cuenca,El Ejido Cuenca,-2.911115,-79.0025,"{""lat"": -2.911115, ""lng"": -79.0025}",010102,Frente al Estadio Alejandro Serrano,1,76.15,2025-05-19,0.2339
+9971475669,Jacinta Jiménez,Cuenca,Ricaurte,-2.879803,-78.971132,"{""lat"": -2.879803, ""lng"": -78.971132}",010205,Junto a la Vía Ricaurte-Cuenca,3,847.68,2025-05-25,1.699
+9479091536,Kevin Loja,Cuenca,Yanuncay,-2.920199,-79.020666,"{""lat"": -2.920199, ""lng"": -79.020666}",010103,A 2 cuadras del Parque Yanuncay,1,38.3,2025-06-08,0.1768
+9916076536,Laura López,Cuenca,El Ejido Cuenca,-2.910577,-79.003607,"{""lat"": -2.910577, ""lng"": -79.003607}",010102,Frente al Estadio Alejandro Serrano,2,202.7,2025-05-31,1.1112
+9636672559,Miguel Montero,Cuenca,El Ejido Cuenca,-2.910946,-79.006503,"{""lat"": -2.910946, ""lng"": -79.006503}",010102,Frente al Estadio Alejandro Serrano,1,41.58,2025-05-29,0.2936
+9423979146,Nancy Nivelo,Cuenca,El Centro Cuenca,-2.896376,-79.00601,"{""lat"": -2.896376, ""lng"": -79.00601}",010101,Frente al Parque Calderón,2,491.42,2025-06-12,3.6012
+9721403732,Patricio Ordóñez,Cuenca,El Centro Cuenca,-2.896669,-79.004268,"{""lat"": -2.896669, ""lng"": -79.004268}",010101,Frente al Parque Calderón,3,735.54,2025-05-21,4.2936
+9738228582,Querubina Pereira,Cuenca,Ricaurte,-2.8784,-78.968704,"{""lat"": -2.8784, ""lng"": -78.968704}",010205,Junto a la Vía Ricaurte-Cuenca,3,642.69,2025-06-12,3.1038
+9806772232,Rodrigo Rivas,Cuenca,El Centro Cuenca,-2.898308,-79.005266,"{""lat"": -2.898308, ""lng"": -79.005266}",010101,Frente al Parque Calderón,1,55.22,2025-06-14,0.2113
+9591274422,Sandra Salcedo,Cuenca,Yanuncay,-2.918819,-79.017,"{""lat"": -2.918819, ""lng"": -79.017}",010103,A 2 cuadras del Parque Yanuncay,2,374.29,2025-05-10,0.9116
+9375584674,Tomás Tapia,Cuenca,Totoracocha,-2.889349,-78.990961,"{""lat"": -2.889349, ""lng"": -78.990961}",010204,A 2 cuadras del Parque Totoracocha,1,196.71,2025-04-18,0.4893
+9977913143,Úrsula Ulloa,Cuenca,El Centro Cuenca,-2.896115,-79.004354,"{""lat"": -2.896115, ""lng"": -79.004354}",010101,A 1 cuadra de la Catedral Nueva,3,802.12,2025-04-30,3.0671
+9371441656,Víctor Valarezo,Cuenca,Totoracocha,-2.891201,-78.990725,"{""lat"": -2.891201, ""lng"": -78.990725}",010204,A 2 cuadras del Parque Totoracocha,1,2.91,2025-04-27,0.0227
+9119795638,Wendy Morocho,Cuenca,Totoracocha,-2.8875,-78.988937,"{""lat"": -2.8875, ""lng"": -78.988937}",010204,A 2 cuadras del Parque Totoracocha,1,176.83,2025-04-30,0.4175
+9693891734,Yadira Arias,Loja,El Valle Loja,-3.98759,-79.216481,"{""lat"": -3.98759, ""lng"": -79.216481}",110103,A 2 cuadras del Estadio Ciudad de Loja,1,48.52,2025-04-18,0.1504
+9749505652,Zoila Bustamante,Loja,El Valle Loja,-3.987374,-79.215536,"{""lat"": -3.987374, ""lng"": -79.215536}",110103,A 2 cuadras del Estadio Ciudad de Loja,2,261.35,2025-04-30,0.6409
+9726104989,Aldo Calle,Loja,Motupe Loja,-4.010803,-79.210331,"{""lat"": -4.010803, ""lng"": -79.210331}",110102,A 2 cuadras del Santuario El Cisne Loja,2,203.83,2025-05-05,0.7032
+9417757928,Bertha Cañar,Loja,Motupe Loja,-4.010894,-79.211343,"{""lat"": -4.010894, ""lng"": -79.211343}",110102,Junto a la Av. Emiliano Ortega,1,65.17,2025-05-01,0.2142
+9426561627,Camilo Contreras,Loja,Motupe Loja,-4.010812,-79.209964,"{""lat"": -4.010812, ""lng"": -79.209964}",110102,A 2 cuadras del Santuario El Cisne Loja,1,74.14,2025-04-19,0.3542
+9174032680,Dayana Duchi,Loja,Universitaria Loja,-3.998509,-79.197926,"{""lat"": -3.998509, ""lng"": -79.197926}",110101,Junto a la Universidad Nacional de Loja,2,355.79,2025-05-11,2.3603
+9764996186,Edgar Encalada,Loja,Carigán Loja,-4.004874,-79.196174,"{""lat"": -4.004874, ""lng"": -79.196174}",110101,Junto a la Av. Pío Jaramillo Alvarado,2,426.68,2025-04-25,2.1971
+9547571981,Flor Fajardo,Loja,El Valle Loja,-3.987955,-79.214974,"{""lat"": -3.987955, ""lng"": -79.214974}",110103,A 2 cuadras del Estadio Ciudad de Loja,2,403.01,2025-05-02,2.7106
+9921615303,Gustavo Guamán,Loja,Carigán Loja,-4.006001,-79.194565,"{""lat"": -4.006001, ""lng"": -79.194565}",110101,Junto a la Av. Pío Jaramillo Alvarado,3,897.54,2025-04-24,4.7314
+9305763500,Hortensia Heredia,Loja,Motupe Loja,-4.010083,-79.210452,"{""lat"": -4.010083, ""lng"": -79.210452}",110102,Junto a la Av. Emiliano Ortega,1,138.83,2025-04-28,0.47
+9603794938,Ignacio Iñiguez,Loja,Centro de Loja,-3.99285,-79.203972,"{""lat"": -3.99285, ""lng"": -79.203972}",110101,Frente al Parque Central de Loja,1,36.03,2025-05-08,0.1578
+9126911160,Jéssica Jaigua,Loja,Universitaria Loja,-3.998428,-79.197896,"{""lat"": -3.998428, ""lng"": -79.197896}",110101,Junto a la Universidad Nacional de Loja,1,59.37,2025-05-01,0.347
+9663101570,Katherin Llivicura,Loja,Centro de Loja,-3.993017,-79.205152,"{""lat"": -3.993017, ""lng"": -79.205152}",110101,A 1 cuadra de la Catedral de Loja,1,133.39,2025-05-06,0.5266
+9462744046,Lorenzo Macas,Loja,El Valle Loja,-3.987075,-79.215031,"{""lat"": -3.987075, ""lng"": -79.215031}",110103,Junto a la Av. Manuel Agustín Aguirre,2,357.45,2025-05-03,2.7971
+9834315307,Martha Mora,Loja,Motupe Loja,-4.010411,-79.210737,"{""lat"": -4.010411, ""lng"": -79.210737}",110102,A 2 cuadras del Santuario El Cisne Loja,3,654.99,2025-05-06,4.5843

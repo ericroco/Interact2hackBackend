@@ -7,6 +7,7 @@ import { LoyaltyCouponEntity } from './domain/entities/loyalty-coupon.entity';
 import { PlatformSubsidyLedgerEntity } from './domain/entities/platform-subsidy-ledger.entity';
 import { TransactionEntity } from '@contexts/transactions/domain/entities/transaction.entity';
 import { MerchantEntity } from '@contexts/merchants/domain/entities/merchant.entity';
+import { MerchantBroadcastEntity } from '@contexts/merchants/domain/entities/merchant-broadcast.entity';
 import { MerchantCategoryTypeOrmRepository } from './infrastructure/adapters/merchant-category.typeorm.repository';
 import { TierConfigTypeOrmRepository } from './infrastructure/adapters/tier-config.typeorm.repository';
 import { LoyaltyTierTypeOrmRepository } from './infrastructure/adapters/loyalty-tier.typeorm.repository';
@@ -28,6 +29,9 @@ import { GetUserLoyaltyProfileUseCase } from './application/use-cases/get-user-l
 import { LoyaltyController } from './infrastructure/adapters/loyalty.controller';
 import { DegradationCron } from './infrastructure/adapters/degradation.cron';
 import { AuthModule } from '@contexts/auth/auth.module';
+import { GetTransactionHistoryUseCase } from './application/use-cases/get-transaction-history.use-case';
+import { TRANSACTION_REPOSITORY } from '@contexts/transactions/domain/ports/transaction.repository.port';
+import { TransactionTypeOrmRepository } from '@contexts/transactions/infrastructure/adapters/transaction.typeorm.repository';
 
 /**
  * LoyaltyModule es autónomo — provee su propio MERCHANT_REPOSITORY
@@ -44,6 +48,7 @@ import { AuthModule } from '@contexts/auth/auth.module';
       PlatformSubsidyLedgerEntity,
       TransactionEntity,
       MerchantEntity,
+      MerchantBroadcastEntity,
     ]),
   ],
   providers: [
@@ -53,12 +58,14 @@ import { AuthModule } from '@contexts/auth/auth.module';
     { provide: LOYALTY_COUPON_REPOSITORY, useClass: LoyaltyCouponTypeOrmRepository },
     { provide: PLATFORM_SUBSIDY_LEDGER_REPOSITORY, useClass: PlatformSubsidyLedgerTypeOrmRepository },
     { provide: MERCHANT_REPOSITORY, useClass: MerchantTypeOrmRepository },
+    { provide: TRANSACTION_REPOSITORY, useClass: TransactionTypeOrmRepository },
     RelativeEffortEngine,
     DegradationCalculator,
     CouponValueCalculator,
     TierClassificationService,
     ProcessTransactionUseCase,
     GetUserLoyaltyProfileUseCase,
+    GetTransactionHistoryUseCase,
     DegradationCron,
   ],
   controllers: [LoyaltyController],

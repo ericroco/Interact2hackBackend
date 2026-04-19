@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { AcquisitionCouponEntity } from '../../domain/entities/acquisition-coupon.entity';
 import { AcquisitionCouponRepositoryPort } from '../../domain/ports/acquisition-coupon.repository.port';
 
@@ -26,7 +26,25 @@ export class AcquisitionCouponTypeOrmRepository implements AcquisitionCouponRepo
     return this.repo.findOneBy({ code });
   }
 
+  findById(id: string): Promise<AcquisitionCouponEntity | null> {
+    return this.repo.findOneBy({ id });
+  }
+
+  async deleteById(id: string): Promise<void> {
+    await this.repo.delete(id);
+  }
+
   async markRedeemed(id: string, userId: string, redeemedAt: Date): Promise<void> {
     await this.repo.update(id, { isRedeemed: true, redeemedBy: userId, redeemedAt });
+  }
+
+  countActiveCoupons(merchantId: string): Promise<number> {
+    return this.repo.count({
+      where: {
+        merchantId,
+        isRedeemed: false,
+        expiresAt: MoreThan(new Date()),
+      },
+    });
   }
 }
